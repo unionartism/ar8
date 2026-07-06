@@ -217,29 +217,25 @@
     let renderer = null;
 
     let step = "ready";
-
-    let currentAimPoint = null;
+    let currentHit = null;
 
     let wallFloorMesh = null;
     let toeMesh = null;
-    let lineMesh = null;
+    let solidLineMesh = null;
+    let previewLineMesh = null;
     let imagePlane = null;
 
     let wallFloorPoint = null;
     let toePoint = null;
 
-    let floorY = null;
-    let floorPlane = null;
-    let wallPlane = null;
     let wallNormal = null;
-
-    let measuredDistanceMeters = 0;
-    let savedDistanceText = "";
+    let wallPlane = null;
 
     let lineProgress = 0;
     let isAnimatingLine = false;
 
-    const raycaster = new THREE.Raycaster();
+    let measuredDistanceMeters = 0;
+    let savedDistanceText = "";
 
     const TARGET_IMAGE_WIDTH_M = 0.4;
     const TARGET_IMAGE_HEIGHT_M = 0.5;
@@ -261,8 +257,14 @@
       metalness: 0.05,
     });
 
-    const lineMaterial = new THREE.MeshBasicMaterial({
+    const solidLineMaterial = new THREE.MeshBasicMaterial({
       color: 0x00ff66,
+    });
+
+    const previewLineMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.35,
     });
 
     actionBtn.addEventListener("click", () => {
@@ -282,14 +284,14 @@
         const x = clamp01(event.clientX / window.innerWidth);
         const y = clamp01(event.clientY / window.innerHeight);
 
-        const point = getPointForCurrentStep(x, y);
+        const hit = getHitAt(x, y);
 
-        if (!point) {
-          showNoPointMessage();
+        if (!hit) {
+          showNoHitMessage();
           return;
         }
 
-        onActionTriggered(point);
+        onActionTriggered(hit);
       },
       { passive: true }
     );
@@ -315,7 +317,7 @@
         setAccent("#ffe600");
         stepTitle.textContent = "2단계: 사용자의 발끝";
         guideText.textContent =
-          "사용자의 발 밑, 즉 바닥 위 원하는 지점을 조준하거나 직접 터치하세요. 이 단계는 첫 기준점 높이의 바닥 평면으로 보정됩니다.";
+          "사용자의 발 밑, 즉 바닥 위 원하는 지점을 조준하거나 직접 터치하세요. 1단계 지점에서 현재 위치까지 미리보기 선이 표시됩니다.";
         actionBtn.textContent = "발끝 확정";
         actionBtn.style.background = "#ffe600";
         actionBtn.style.color = "#000";
@@ -325,7 +327,7 @@
         setAccent("#ff00ff");
         stepTitle.textContent = "3단계: 벽면 이미지 배치";
         guideText.textContent =
-          "벽면 정면의 원하는 위치를 조준하거나 직접 터치하세요. 이미지는 계산된 벽면 평면 위에 배치됩니다.";
+          "벽면 정면의 원하는 위치를 조준하거나 직접 터치하세요. 이미지는 측정한 벽면 깊이에 맞춰 보정됩니다.";
         actionBtn.textContent = "여기에 이미지 부착";
         actionBtn.style.background = "#ff00ff";
         actionBtn.style.color = "#fff";
@@ -342,22 +344,16 @@
       }
     }
 
-    function onActionTriggered(forcedPoint = null) {
-      const point = forcedPoint || currentAimPoint;
+    function onActionTriggered(forcedHit = null) {
+      const hit = forcedHit || currentHit;
 
-      if (!point) {
-        showNoPointMessage();
+      if (!hit) {
+        showNoHitMessage();
         return;
       }
 
       if (step === "wallFloor") {
-        wallFloorPoint = point.clone();
-        floorY = wallFloorPoint.y;
-
-        floorPlane = new THREE.Plane(
-          new THREE.Vector3(0, 1, 0),
-          -floorY
-        );
+        wallFloorPoint = hit.position.clone();
 
         wallFloorMesh = createMarker(wallFloorPoint, wallMarkerMaterial);
         scene.add(wallFloorMesh);
@@ -370,20 +366,22 @@
       }
 
       if (step === "toe") {
-        if (!wallFloorPoint || !floorPlane) {
+        if (!wallFloorPoint) {
           resultEl.textContent = "먼저 벽/바닥 기준점을 선택해야 합니다.";
           setStep("wallFloor");
           return;
         }
 
-        toePoint = point.clone();
-        toePoint.y = floorY;
+        toePoint = hit.position.clone();
 
-        const horizontalVector = new THREE.Vector3()
-          .subVectors(toePoint, wallFloorPoint);
-        horizontalVector.y = 0;
+        // 발밑은 바닥 거리 측정용이므로 y축 흔들림을 줄인다.
+        // 실제 hitTest 좌표계는 유지하되, 거리/줄자 계산에는 1단계 높이를 사용한다.
+        toePoint.y = wallFloorPoint.y;
 
-        measuredDistanceMeters = horizontalVector.length();
+        const horizontal = new THREE.Vector3().subVectors(toePoint, wallFloorPoint);
+        horizontal.y = 0;
+
+        measuredDistanceMeters = horizontal.length();
 
         if (measuredDistanceMeters < 0.08) {
           resultEl.textContent =
@@ -393,7 +391,7 @@
           return;
         }
 
-        wallNormal = horizontalVector.clone().normalize();
+        wallNormal = horizontal.clone().normalize();
 
         wallPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
           wallNormal,
@@ -403,9 +401,10 @@
         toeMesh = createMarker(toePoint, toeMarkerMaterial);
         scene.add(toeMesh);
 
-        lineProgress = 0;
-        isAnimatingLine = true;
-        updateLineMesh(wallFloorPoint, wallFloorPoint);
+        removeObject(previewLineMesh);
+        previewLineMesh = null;
+
+        startConnectionAnimation();
 
         const distanceInCm = Math.round(measuredDistanceMeters * 100);
 
@@ -424,31 +423,18 @@
 
       if (step === "placeImage") {
         if (!wallPlane || !wallNormal) {
-          resultEl.textContent = "벽면 평면 계산값이 없습니다. 다시 측정해 주세요.";
+          resultEl.textContent = "벽면 보정값이 없습니다. 다시 측정해 주세요.";
           return;
         }
 
-        placeImageAt(point.clone());
+        const rawImagePoint = hit.position.clone();
+        const correctedImagePoint = correctPointToMeasuredWall(rawImagePoint);
+
+        placeImageAt(correctedImagePoint);
       }
     }
 
-    function getPointForCurrentStep(screenX01, screenY01) {
-      if (step === "wallFloor") {
-        return getFeaturePointAt(screenX01, screenY01);
-      }
-
-      if (step === "toe") {
-        return getFloorPointAt(screenX01, screenY01);
-      }
-
-      if (step === "placeImage") {
-        return getWallPointAt(screenX01, screenY01);
-      }
-
-      return null;
-    }
-
-    function getFeaturePointAt(x, y) {
+    function getHitAt(x, y) {
       if (!window.XR8 || !window.XR8.XrController) return null;
 
       let hitResults = [];
@@ -471,68 +457,123 @@
         return null;
       }
 
-      return new THREE.Vector3(
-        hit.position.x,
-        hit.position.y,
-        hit.position.z
-      );
+      return {
+        type: hit.type,
+        distance: hit.distance,
+        position: new THREE.Vector3(
+          hit.position.x,
+          hit.position.y,
+          hit.position.z
+        ),
+      };
     }
 
-    function getFloorPointAt(x, y) {
-      if (!floorPlane || !camera) return null;
+    function correctPointToMeasuredWall(rawPoint) {
+      if (!wallPlane || !wallNormal) {
+        return rawPoint.clone();
+      }
 
-      const ray = getCameraRayFromScreen(x, y);
-      if (!ray) return null;
+      // raw hit point의 좌우/상하 느낌은 유지하고,
+      // 깊이만 1단계-2단계에서 만든 벽면 plane으로 보정한다.
+      const corrected = rawPoint.clone();
+      wallPlane.projectPoint(rawPoint, corrected);
 
-      const point = new THREE.Vector3();
-      const intersected = ray.intersectPlane(floorPlane, point);
+      // 이미지가 벽에 파묻히거나 깜빡이지 않게 사용자 방향으로 살짝 띄운다.
+      corrected.add(wallNormal.clone().multiplyScalar(0.012));
 
-      if (!intersected) return null;
-
-      const cameraToPoint = point.clone().sub(camera.position);
-      if (cameraToPoint.dot(ray.direction) <= 0) return null;
-
-      point.y = floorY;
-
-      return point;
-    }
-
-    function getWallPointAt(x, y) {
-      if (!wallPlane || !camera) return null;
-
-      const ray = getCameraRayFromScreen(x, y);
-      if (!ray) return null;
-
-      const point = new THREE.Vector3();
-      const intersected = ray.intersectPlane(wallPlane, point);
-
-      if (!intersected) return null;
-
-      const cameraToPoint = point.clone().sub(camera.position);
-      if (cameraToPoint.dot(ray.direction) <= 0) return null;
-
-      return point;
-    }
-
-    function getCameraRayFromScreen(x01, y01) {
-      if (!camera) return null;
-
-      camera.updateMatrixWorld(true);
-
-      const ndc = new THREE.Vector2(
-        x01 * 2 - 1,
-        -(y01 * 2 - 1)
-      );
-
-      raycaster.setFromCamera(ndc, camera);
-
-      return raycaster.ray.clone();
+      return corrected;
     }
 
     function createMarker(position, material) {
       const mesh = new THREE.Mesh(markerGeometry, material);
       mesh.position.copy(position);
       mesh.scale.setScalar(0.001);
+      return mesh;
+    }
+
+    function startConnectionAnimation() {
+      removeObject(solidLineMesh);
+      solidLineMesh = null;
+
+      lineProgress = 0;
+      isAnimatingLine = true;
+
+      updateSolidLine(wallFloorPoint, wallFloorPoint);
+    }
+
+    function updateConnectionAnimation() {
+      if (!isAnimatingLine || !wallFloorPoint || !toePoint) return;
+
+      lineProgress += 0.055;
+
+      if (lineProgress >= 1) {
+        lineProgress = 1;
+        isAnimatingLine = false;
+      }
+
+      const currentEnd = new THREE.Vector3().lerpVectors(
+        wallFloorPoint,
+        toePoint,
+        lineProgress
+      );
+
+      updateSolidLine(wallFloorPoint, currentEnd);
+    }
+
+    function updateToePreviewLine() {
+      if (step !== "toe" || !wallFloorPoint || !currentHit) {
+        removeObject(previewLineMesh);
+        previewLineMesh = null;
+        return;
+      }
+
+      const previewEnd = currentHit.position.clone();
+      previewEnd.y = wallFloorPoint.y;
+
+      previewLineMesh = updateCylinderLine(
+        previewLineMesh,
+        wallFloorPoint,
+        previewEnd,
+        previewLineMaterial,
+        0.0035
+      );
+    }
+
+    function updateSolidLine(start, end) {
+      solidLineMesh = updateCylinderLine(
+        solidLineMesh,
+        start,
+        end,
+        solidLineMaterial,
+        0.007
+      );
+    }
+
+    function updateCylinderLine(existingMesh, start, end, material, radius) {
+      if (!scene) return null;
+
+      if (existingMesh) {
+        scene.remove(existingMesh);
+        existingMesh.geometry.dispose();
+        existingMesh = null;
+      }
+
+      const direction = new THREE.Vector3().subVectors(end, start);
+      const length = direction.length();
+
+      if (length < 0.001) return null;
+
+      const geometry = new THREE.CylinderGeometry(radius, radius, length, 16);
+      const mesh = new THREE.Mesh(geometry, material);
+
+      mesh.position.copy(start).add(end).multiplyScalar(0.5);
+      mesh.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        direction.normalize()
+      );
+
+      scene.add(mesh);
+
       return mesh;
     }
 
@@ -555,7 +596,7 @@
 
           resultEl.innerHTML =
             savedDistanceText +
-            "<br><span style='color:#00ff66;font-weight:900;'>계산된 벽면 위치에 이미지 부착 완료!</span>";
+            "<br><span style='color:#00ff66;font-weight:900;'>계산된 벽면 깊이에 이미지 부착 완료!</span>";
 
           setStep("done");
         },
@@ -575,6 +616,9 @@
     }
 
     function createImagePlane(positionOnWall, texture) {
+      removeObject(imagePlane);
+      imagePlane = null;
+
       const geometry = new THREE.PlaneGeometry(
         TARGET_IMAGE_WIDTH_M,
         TARGET_IMAGE_HEIGHT_M
@@ -587,14 +631,10 @@
       });
 
       imagePlane = new THREE.Mesh(geometry, material);
-
       imagePlane.position.copy(positionOnWall);
 
-      // 벽면 깜빡임 방지를 위해 벽에서 사용자 쪽으로 아주 살짝 띄운다.
-      imagePlane.position.add(wallNormal.clone().multiplyScalar(0.012));
-
-      // PlaneGeometry의 기본 normal은 +Z.
-      // 이 +Z를 벽면 normal 방향으로 맞춰서 이미지가 벽면에 붙도록 회전시킨다.
+      // PlaneGeometry의 기본 front normal은 +Z.
+      // +Z를 벽에서 사용자 쪽으로 향하는 wallNormal에 맞춘다.
       imagePlane.quaternion.setFromUnitVectors(
         new THREE.Vector3(0, 0, 1),
         wallNormal.clone().normalize()
@@ -634,50 +674,6 @@
       return texture;
     }
 
-    function updateLineAnimation() {
-      if (!isAnimatingLine || !wallFloorPoint || !toePoint) return;
-
-      lineProgress += 0.055;
-
-      if (lineProgress >= 1) {
-        lineProgress = 1;
-        isAnimatingLine = false;
-      }
-
-      const currentEnd = new THREE.Vector3().lerpVectors(
-        wallFloorPoint,
-        toePoint,
-        lineProgress
-      );
-
-      updateLineMesh(wallFloorPoint, currentEnd);
-    }
-
-    function updateLineMesh(start, end) {
-      if (lineMesh) {
-        scene.remove(lineMesh);
-        lineMesh.geometry.dispose();
-        lineMesh = null;
-      }
-
-      const direction = new THREE.Vector3().subVectors(end, start);
-      const length = direction.length();
-
-      if (length < 0.001) return;
-
-      const geometry = new THREE.CylinderGeometry(0.007, 0.007, length, 16);
-      const mesh = new THREE.Mesh(geometry, lineMaterial);
-
-      mesh.position.copy(start).add(end).multiplyScalar(0.5);
-      mesh.quaternion.setFromUnitVectors(
-        new THREE.Vector3(0, 1, 0),
-        direction.normalize()
-      );
-
-      lineMesh = mesh;
-      scene.add(lineMesh);
-    }
-
     function animateMarkers() {
       scaleMarker(wallFloorMesh);
       scaleMarker(toeMesh);
@@ -693,16 +689,16 @@
       mesh.scale.setScalar(next);
     }
 
-    function updateCurrentAimPoint() {
+    function updateCurrentHit() {
       if (step === "done") {
-        currentAimPoint = null;
+        currentHit = null;
         return;
       }
 
-      currentAimPoint = getPointForCurrentStep(0.5, 0.5);
+      currentHit = getHitAt(0.5, 0.5);
 
-      if (!currentAimPoint) {
-        showNoPointMessage();
+      if (!currentHit) {
+        showNoHitMessage();
         return;
       }
 
@@ -711,17 +707,17 @@
       }
 
       if (step === "toe") {
-        resultEl.textContent = "바닥 평면 계산 성공! 발끝 위치를 확정하세요.";
+        resultEl.textContent = "공간 인식 성공! 발끝 위치를 확정하세요.";
       }
 
       if (step === "placeImage") {
         resultEl.innerHTML =
           savedDistanceText +
-          "<br>계산된 벽면 평면 위의 원하는 위치를 조준하거나 직접 터치하세요.";
+          "<br>벽면 정면의 원하는 위치를 조준하거나 직접 터치하세요.";
       }
     }
 
-    function showNoPointMessage() {
+    function showNoHitMessage() {
       if (step === "wallFloor") {
         resultEl.textContent =
           "벽/바닥 경계 근처를 천천히 비춰주세요. 공간 특징점을 찾는 중입니다.";
@@ -730,14 +726,14 @@
 
       if (step === "toe") {
         resultEl.textContent =
-          "발밑 위치를 계산할 수 없습니다. 카메라를 바닥 쪽으로 조금 더 기울여 주세요.";
+          "발밑 위치를 찾는 중입니다. 바닥을 천천히 비춰주세요.";
         return;
       }
 
       if (step === "placeImage") {
         resultEl.innerHTML =
           savedDistanceText +
-          "<br>벽면 위치를 계산할 수 없습니다. 측정한 벽 쪽을 바라봐 주세요.";
+          "<br>벽면 근처 특징점을 찾는 중입니다. 벽 쪽을 천천히 비춰주세요.";
         return;
       }
 
@@ -747,27 +743,28 @@
     function resetMeasurement() {
       removeObject(wallFloorMesh);
       removeObject(toeMesh);
-      removeObject(lineMesh);
+      removeObject(solidLineMesh);
+      removeObject(previewLineMesh);
       removeObject(imagePlane);
 
       wallFloorMesh = null;
       toeMesh = null;
-      lineMesh = null;
+      solidLineMesh = null;
+      previewLineMesh = null;
       imagePlane = null;
 
       wallFloorPoint = null;
       toePoint = null;
 
-      floorY = null;
-      floorPlane = null;
-      wallPlane = null;
       wallNormal = null;
+      wallPlane = null;
 
-      currentAimPoint = null;
+      currentHit = null;
 
-      measuredDistanceMeters = 0;
       lineProgress = 0;
       isAnimatingLine = false;
+
+      measuredDistanceMeters = 0;
       savedDistanceText = "";
 
       resultEl.textContent = "주변 공간, 특히 벽과 바닥을 천천히 비춰주세요.";
@@ -797,6 +794,16 @@
 
     function disposeMaterial(material) {
       if (!material) return;
+
+      // 공유 material은 dispose하지 않는다.
+      if (
+        material === wallMarkerMaterial ||
+        material === toeMarkerMaterial ||
+        material === solidLineMaterial ||
+        material === previewLineMaterial
+      ) {
+        return;
+      }
 
       if (material.map) {
         material.map.dispose();
@@ -852,9 +859,10 @@
         onUpdate: () => {
           if (!scene || !camera) return;
 
-          updateCurrentAimPoint();
+          updateCurrentHit();
+          updateToePreviewLine();
+          updateConnectionAnimation();
           animateMarkers();
-          updateLineAnimation();
         },
       };
     }
