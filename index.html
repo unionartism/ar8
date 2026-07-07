@@ -312,28 +312,14 @@
         let currentHitPosition = null;
         let hasRecentHit = false;
 
-        // 좌표 안정화용
-        let smoothedHitPosition = null;
-        let stableHitFrames = 0;
-        let hitMissFrames = 0;
-
-        const HIT_SMOOTHING = 0.22;
-        const MIN_STABLE_FRAMES = 6;
-        const MAX_HIT_JUMP_M = 0.75;
-        const MAX_MISS_FRAMES = 6;
-
         let wallFloorMesh = null;
         let toeMesh = null;
         let lineMesh = null;
-
-        // 이미지 고정용 anchor 그룹
-        let imageAnchor = null;
         let imagePlane = null;
 
         let lineProgress = 0;
         let isAnimatingLine = false;
         let savedDistanceText = '';
-        let isLoadingImage = false;
 
         // 이미지 스펙: 40cm * 50cm
         const TARGET_IMAGE_WIDTH_M = 0.4;
@@ -345,6 +331,14 @@
         startBtn.addEventListener('click', startAR);
         actionBtn.addEventListener('click', onActionTriggered);
         resetBtn.addEventListener('click', resetMeasurement);
+
+        window.addEventListener('resize', () => {
+            if (!camera || !renderer) return;
+
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
 
         function waitForXR8() {
             return new Promise((resolve, reject) => {
@@ -421,26 +415,28 @@
             return {
                 name: 'unionart-ar-measure',
 
-                onStart: () => {
-                    const xrScene = window.XR8.Threejs.xrScene();
+                onStart: ({ canvasWidth, canvasHeight }) => {
+                    const xrScene = XR8.Threejs.xrScene();
 
                     scene = xrScene.scene;
                     camera = xrScene.camera;
                     renderer = xrScene.renderer;
 
-                    /*
-                     * 중요:
-                     * 8th Wall Threejs.pipelineModule이 카메라/렌더러/투영행렬을 관리한다.
-                     * 여기서 renderer.setSize(), renderer.setPixelRatio(),
-                     * XR8.XrController.updateCameraProjectionMatrix()를 직접 호출하면
-                     * 월드 좌표가 화면 기준처럼 밀리거나, 오브젝트가 카메라를 따라오는 문제가 생길 수 있다.
-                     */
+                    renderer.setPixelRatio(window.devicePixelRatio);
+                    renderer.setSize(window.innerWidth, window.innerHeight);
 
                     scene.add(new THREE.HemisphereLight(0xffffff, 0xbbbbff, 3));
 
                     const light = new THREE.DirectionalLight(0xffffff, 1.2);
                     light.position.set(0.5, 1, 0.25);
                     scene.add(light);
+
+                    /*
+                     * 중요:
+                     * 기존에 있던 XR8.XrController.updateCameraProjectionMatrix()는 제거.
+                     * 이 값을 수동으로 재설정하면 8th Wall의 카메라/월드 좌표 동기화가 틀어져
+                     * 오브젝트가 화면을 따라오거나 사라지는 문제가 생길 수 있음.
+                     */
                 },
 
                 onUpdate: () => {
@@ -460,7 +456,7 @@
             try {
                 // 8th Wall hitTest는 픽셀 좌표가 아니라 0~1 정규화 좌표 사용
                 // 화면 중앙 조준점 = 0.5, 0.5
-                hitResults = window.XR8.XrController.hitTest(0.5, 0.5, HIT_TYPES) || [];
+                hitResults = XR8.XrController.hitTest(0.5, 0.5, HIT_TYPES) || [];
             } catch (error) {
                 hitResults = [];
             }
@@ -469,41 +465,11 @@
             const position = hit ? getPositionFromHit(hit) : null;
 
             if (position) {
-                hitMissFrames = 0;
-
-                if (!smoothedHitPosition) {
-                    smoothedHitPosition = position.clone();
-                    stableHitFrames = 1;
-                } else {
-                    const movement = smoothedHitPosition.distanceTo(position);
-
-                    /*
-                     * 너무 큰 점프는 사용자가 조준점을 옮긴 것으로 보고 새 좌표로 재시작.
-                     * 작은 흔들림은 lerp로 부드럽게 안정화.
-                     */
-                    if (movement > MAX_HIT_JUMP_M) {
-                        smoothedHitPosition.copy(position);
-                        stableHitFrames = 1;
-                    } else {
-                        smoothedHitPosition.lerp(position, HIT_SMOOTHING);
-                        stableHitFrames++;
-                    }
-                }
-
-                currentHitPosition = smoothedHitPosition.clone();
-                hasRecentHit = stableHitFrames >= MIN_STABLE_FRAMES;
+                currentHitPosition = position;
+                hasRecentHit = true;
             } else {
-                hitMissFrames++;
-
-                /*
-                 * 순간적으로 hitTest가 끊기는 경우가 있어서 몇 프레임은 마지막 안정 좌표 유지.
-                 */
-                if (hitMissFrames > MAX_MISS_FRAMES) {
-                    currentHitPosition = null;
-                    smoothedHitPosition = null;
-                    stableHitFrames = 0;
-                    hasRecentHit = false;
-                }
+                currentHitPosition = null;
+                hasRecentHit = false;
             }
         }
 
@@ -587,31 +553,22 @@
                 return;
             }
 
-            /*
-             * 1단계/2단계는 좌표가 충분히 안정화된 뒤에만 확정.
-             * 3단계는 기준점/발끝을 이미 확보했으므로 hitTest 실패와 무관하게 진행.
-             */
-            if ((!currentHitPosition || !hasRecentHit) && step !== 'placeImage') {
+            // 3단계는 기준점/발끝을 이미 확보했으므로 hitTest 실패와 무관하게 진행
+            if (!currentHitPosition && step !== 'placeImage') {
                 resultEl.innerHTML = `
                     <span style="color:#ffcc00; font-weight:900;">
-                        좌표를 안정화하는 중입니다.
+                        아직 공간을 인식하지 못했습니다.
                     </span><br>
                     <span style="font-size:0.95em;">
-                        조준점을 유지한 채 벽과 바닥이 만나는 부분을 천천히 비춰주세요.
+                        벽과 바닥이 만나는 부분을 천천히 비춰주세요.
                     </span>
                 `;
-
-                actionBtn.style.opacity = '0.72';
-                setTimeout(() => {
-                    actionBtn.style.opacity = '1';
-                }, 450);
-
                 return;
             }
 
             if (step === 'wallFloor') {
                 wallFloorMesh = createPointMesh(0x00d4ff);
-                wallFloorMesh.position.copy(currentHitPosition.clone());
+                wallFloorMesh.position.copy(currentHitPosition);
                 wallFloorMesh.scale.set(0, 0, 0);
                 scene.add(wallFloorMesh);
 
@@ -620,7 +577,7 @@
 
             } else if (step === 'toe') {
                 toeMesh = createPointMesh(0xffe600);
-                toeMesh.position.copy(currentHitPosition.clone());
+                toeMesh.position.copy(currentHitPosition);
                 toeMesh.scale.set(0, 0, 0);
                 scene.add(toeMesh);
 
@@ -691,9 +648,6 @@
                 return;
             }
 
-            if (isLoadingImage) return;
-            isLoadingImage = true;
-
             const textureLoader = new THREE.TextureLoader();
             textureLoader.crossOrigin = 'anonymous';
 
@@ -705,11 +659,8 @@
             textureLoader.load(
                 IMAGE_URL,
                 (texture) => {
-                    isLoadingImage = false;
-
-                    if (imageAnchor) {
-                        disposeObject(imageAnchor);
-                        imageAnchor = null;
+                    if (imagePlane) {
+                        disposeObject(imagePlane);
                         imagePlane = null;
                     }
 
@@ -725,22 +676,15 @@
                     });
 
                     imagePlane = new THREE.Mesh(imageGeometry, imageMaterial);
-                    imagePlane.position.set(0, 0, 0);
 
-                    /*
-                     * 이미지 자체를 scene에 바로 넣지 않고,
-                     * 월드 좌표에 고정되는 imageAnchor 그룹에 넣는다.
-                     * 이후에는 imageAnchor/imagePlane의 position/rotation을 업데이트하지 않는다.
-                     */
-                    imageAnchor = new THREE.Group();
+                    // X/Z는 1단계 벽/바닥 기준점 계승
+                    imagePlane.position.copy(wallFloorMesh.position);
 
-                    const anchorPosition = wallFloorMesh.position.clone();
-
-                    // Y는 버튼을 누른 순간의 카메라 월드 높이 사용
+                    // Y는 현재 카메라 월드 높이 사용
                     const cameraWorldPosition = new THREE.Vector3();
                     camera.updateMatrixWorld(true);
                     camera.getWorldPosition(cameraWorldPosition);
-                    anchorPosition.y = cameraWorldPosition.y;
+                    imagePlane.position.y = cameraWorldPosition.y;
 
                     // 벽 기준점 -> 발끝 방향을 사용자 방향으로 간주
                     const wallToUser = new THREE.Vector3().subVectors(
@@ -749,9 +693,6 @@
                     );
                     wallToUser.y = 0;
 
-                    /*
-                     * 발끝 방향 계산이 너무 작으면 카메라 위치 기준으로 fallback.
-                     */
                     if (wallToUser.lengthSq() < 0.0001) {
                         wallToUser.subVectors(cameraWorldPosition, wallFloorMesh.position);
                         wallToUser.y = 0;
@@ -763,17 +704,37 @@
 
                     wallToUser.normalize();
 
-                    // 벽면과 겹침 방지: 사용자 방향으로 1.5cm 띄움
-                    anchorPosition.addScaledVector(wallToUser, 0.015);
+                    // 벽면과 겹침 방지: 사용자 방향으로 3cm 띄움
+                    imagePlane.position.addScaledVector(wallToUser, 0.03);
 
-                    imageAnchor.position.copy(anchorPosition);
+                    /*
+                     * 최소 거리 보정:
+                     * 기준점이 너무 카메라 가까이에 잡히면 이미지가 화면 전체를 가려버릴 수 있으므로
+                     * 카메라에서 최소 75cm 이상 떨어지도록 보정.
+                     */
+                    const cameraToImage = new THREE.Vector3().subVectors(
+                        imagePlane.position,
+                        cameraWorldPosition
+                    );
 
-                    // anchor 그룹이 사용자 방향을 향하도록 회전
-                    const lookTarget = imageAnchor.position.clone().add(wallToUser);
-                    imageAnchor.lookAt(lookTarget);
+                    const horizontalDistance = Math.sqrt(
+                        cameraToImage.x * cameraToImage.x +
+                        cameraToImage.z * cameraToImage.z
+                    );
 
-                    imageAnchor.add(imagePlane);
-                    scene.add(imageAnchor);
+                    const MIN_IMAGE_DISTANCE_M = 0.75;
+
+                    if (horizontalDistance < MIN_IMAGE_DISTANCE_M) {
+                        imagePlane.position.copy(cameraWorldPosition);
+                        imagePlane.position.y = cameraWorldPosition.y;
+                        imagePlane.position.addScaledVector(wallToUser, MIN_IMAGE_DISTANCE_M);
+                    }
+
+                    // 이미지가 사용자 방향을 향하도록 회전
+                    const lookTarget = imagePlane.position.clone().add(wallToUser);
+                    imagePlane.lookAt(lookTarget);
+
+                    scene.add(imagePlane);
 
                     resultEl.innerHTML = savedDistanceText + `
                         <br>
@@ -784,8 +745,6 @@
                 },
                 undefined,
                 () => {
-                    isLoadingImage = false;
-
                     resultEl.innerHTML = savedDistanceText + `
                         <br>
                         <span style="color:#ffcc00; font-weight:900;">
@@ -838,7 +797,6 @@
 
         function updateStatusText() {
             if (step === 'done') return;
-            if (isLoadingImage) return;
 
             if (step === 'placeImage') {
                 resultEl.innerHTML = savedDistanceText + `
@@ -850,9 +808,7 @@
                 return;
             }
 
-            if (currentHitPosition && stableHitFrames < MIN_STABLE_FRAMES) {
-                resultEl.textContent = '좌표를 안정화하는 중입니다... 조준점을 잠시 유지해주세요.';
-            } else if (hasRecentHit) {
+            if (hasRecentHit) {
                 resultEl.textContent = '공간 인식 성공! 확정 버튼을 누르세요.';
             } else {
                 resultEl.textContent = '공간을 탐색 중입니다...';
@@ -875,11 +831,7 @@
                 lineMesh = null;
             }
 
-            if (imageAnchor) {
-                disposeObject(imageAnchor);
-                imageAnchor = null;
-                imagePlane = null;
-            } else if (imagePlane) {
+            if (imagePlane) {
                 disposeObject(imagePlane);
                 imagePlane = null;
             }
@@ -887,7 +839,6 @@
             lineProgress = 0;
             isAnimatingLine = false;
             savedDistanceText = '';
-            isLoadingImage = false;
 
             resultEl.textContent = '주변 공간을 천천히 비춰주세요.';
 
@@ -899,25 +850,20 @@
         function disposeObject(object) {
             if (!object) return;
 
-            /*
-             * Group 안에 들어간 Mesh까지 전부 정리.
-             */
-            object.traverse((child) => {
-                if (child.geometry) {
-                    child.geometry.dispose();
-                }
-
-                if (child.material) {
-                    if (Array.isArray(child.material)) {
-                        child.material.forEach(disposeMaterial);
-                    } else {
-                        disposeMaterial(child.material);
-                    }
-                }
-            });
-
             if (object.parent) {
                 object.parent.remove(object);
+            }
+
+            if (object.geometry) {
+                object.geometry.dispose();
+            }
+
+            if (object.material) {
+                if (Array.isArray(object.material)) {
+                    object.material.forEach(disposeMaterial);
+                } else {
+                    disposeMaterial(object.material);
+                }
             }
         }
 
