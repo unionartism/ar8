@@ -1,950 +1,873 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
-  />
-  <title>8th Wall 벽면 거리 측정 및 지정 위치 이미지 배치 AR</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <title>8th Wall 벽면 거리 측정 및 이미지 배치 AR 테스트</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+    <!-- 8th Wall Engine Binary -->
+    <script
+        src="https://cdn.jsdelivr.net/npm/@8thwall/engine-binary@1/dist/xr.js"
+        async
+        crossorigin="anonymous"
+        data-preload-chunks="slam"></script>
 
-    :root {
-      --crosshair-color: #00ff66;
-    }
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
 
-    html,
-    body {
-      margin: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #000;
-      color: #fff;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      touch-action: none;
-      -webkit-user-select: none;
-      user-select: none;
-    }
-
-    canvas {
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 1;
-      display: block;
-    }
-
-    #ui-layer {
-      position: fixed;
-      inset: 0;
-      z-index: 10;
-      pointer-events: none;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    #top-panel {
-      padding: 20px;
-      padding-top: calc(10px + env(safe-area-inset-top, 0));
-      background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0));
-    }
-
-    #step-title {
-      font-size: 18px;
-      font-weight: 800;
-      color: #00ff66;
-      margin-bottom: 5px;
-    }
-
-    #guide-text {
-      font-size: 14px;
-      line-height: 1.4;
-      opacity: 0.9;
-    }
-
-    #bottom-panel {
-      padding: 15px;
-      padding-bottom: calc(15px + env(safe-area-inset-bottom, 0));
-      background: rgba(0, 0, 0, 0.82);
-      backdrop-filter: blur(10px);
-      pointer-events: auto;
-      display: none;
-    }
-
-    .row {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    button {
-      flex: 1;
-      padding: 14px;
-      border: 0;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: 800;
-      color: #fff;
-      background: #007aff;
-      cursor: pointer;
-    }
-
-    button.danger {
-      background: #991b1b;
-      flex: 0.4;
-    }
-
-    button:active {
-      transform: scale(0.98);
-    }
-
-    button:disabled {
-      opacity: 0.55;
-      cursor: default;
-      transform: none;
-    }
-
-    #result {
-      padding: 12px;
-      border-radius: 8px;
-      background: rgba(255,255,255,0.1);
-      font-size: 15px;
-      line-height: 1.5;
-      text-align: center;
-      min-height: 48px;
-    }
-
-    #crosshair {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      width: 30px;
-      height: 30px;
-      transform: translate(-50%, -50%);
-      z-index: 5;
-      pointer-events: none;
-      border: 2px solid var(--crosshair-color);
-      border-radius: 50%;
-      transition: border-color 0.15s ease;
-    }
-
-    #crosshair::before,
-    #crosshair::after {
-      content: '';
-      position: absolute;
-      background: var(--crosshair-color);
-      transition: background-color 0.15s ease;
-    }
-
-    #crosshair::before {
-      top: 50%;
-      left: -5px;
-      right: -5px;
-      height: 2px;
-      transform: translateY(-50%);
-    }
-
-    #crosshair::after {
-      left: 50%;
-      top: -5px;
-      bottom: -5px;
-      width: 2px;
-      transform: translateX(-50%);
-    }
-  </style>
-
-  <!-- 8th Wall Engine Binary -->
-  <script
-    async
-    src="https://cdn.jsdelivr.net/npm/@8thwall/engine-binary@1/dist/xr.js"
-    crossorigin="anonymous"
-    data-preload-chunks="slam">
-  </script>
-
-  <script
-    src="https://cdn.jsdelivr.net/npm/@8thwall/xrextras@1/dist/xrextras.js"
-    crossorigin="anonymous">
-  </script>
-
-  <script
-    src="https://cdn.jsdelivr.net/npm/@8thwall/landing-page@1/dist/landing-page.js"
-    crossorigin="anonymous">
-  </script>
-
-  <script type="importmap">
+    <script type="importmap">
     {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
-      }
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+        }
     }
-  </script>
+    </script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            color: #fff;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            touch-action: none;
+        }
+
+        #camerafeed {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            display: block;
+            background: #000;
+        }
+
+        #start-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background:
+                radial-gradient(circle at center, rgba(0, 122, 255, 0.28), rgba(0, 0, 0, 0.95) 62%),
+                #000;
+        }
+
+        .start-card {
+            width: min(420px, 100%);
+            padding: 26px 22px;
+            border-radius: 24px;
+            background: rgba(12, 16, 24, 0.82);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+            text-align: center;
+            backdrop-filter: blur(14px);
+        }
+
+        .start-title {
+            font-size: 22px;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+
+        .start-desc {
+            font-size: 14px;
+            line-height: 1.5;
+            opacity: 0.82;
+            margin-bottom: 20px;
+        }
+
+        #start-btn {
+            width: 100%;
+            padding: 16px 18px;
+            border: 0;
+            border-radius: 15px;
+            font-size: 17px;
+            font-weight: 900;
+            color: #fff;
+            background: #007aff;
+            cursor: pointer;
+            box-shadow: 0 10px 24px rgba(0, 122, 255, 0.35);
+        }
+
+        #start-btn:active {
+            transform: scale(0.98);
+        }
+
+        #start-error {
+            margin-top: 14px;
+            font-size: 13px;
+            line-height: 1.45;
+            color: #ffcc00;
+            min-height: 18px;
+        }
+
+        #ui-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        #top-panel {
+            padding: 20px;
+            padding-top: calc(12px + env(safe-area-inset-top, 0px));
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0));
+        }
+
+        #step-title {
+            font-size: 18px;
+            font-weight: 900;
+            color: #00ff66;
+            margin-bottom: 6px;
+        }
+
+        #guide-text {
+            font-size: 14px;
+            line-height: 1.45;
+            opacity: 0.92;
+        }
+
+        #bottom-panel {
+            display: none;
+            padding: 15px;
+            padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+            background: rgba(0, 0, 0, 0.82);
+            backdrop-filter: blur(12px);
+            pointer-events: auto;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        button {
+            flex: 1;
+            min-height: 54px;
+            padding: 14px 12px;
+            border: 0;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 900;
+            color: #fff;
+            background: #007aff;
+            cursor: pointer;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+        }
+
+        button.danger {
+            flex: 0.38;
+            background: #2f333a;
+            color: #d1d5db;
+            font-size: 14px;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        #result {
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.11);
+            font-size: 15px;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        #crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 30px;
+            height: 30px;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            pointer-events: none;
+            border: 2px solid #00ff66;
+            border-radius: 50%;
+            display: none;
+        }
+
+        #crosshair::before,
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            background: currentColor;
+            color: inherit;
+        }
+
+        #crosshair::before {
+            top: 50%;
+            left: -5px;
+            right: -5px;
+            height: 2px;
+            transform: translateY(-50%);
+        }
+
+        #crosshair::after {
+            left: 50%;
+            top: -5px;
+            bottom: -5px;
+            width: 2px;
+            transform: translateX(-50%);
+        }
+
+        body.step-wallFloor #crosshair {
+            color: #00d4ff;
+            border-color: #00d4ff;
+        }
+
+        body.step-toe #crosshair {
+            color: #ffe600;
+            border-color: #ffe600;
+        }
+
+        body.step-placeImage #crosshair {
+            color: #ff00ff;
+            border-color: #ff00ff;
+        }
+
+        body.step-done #crosshair {
+            color: #fff;
+            border-color: #fff;
+        }
+    </style>
 </head>
 
 <body>
-  <canvas id="camerafeed"></canvas>
+    <canvas id="camerafeed"></canvas>
 
-  <div id="crosshair"></div>
+    <div id="crosshair"></div>
 
-  <div id="ui-layer">
-    <div id="top-panel">
-      <div id="step-title">AR 준비</div>
-      <div id="guide-text">카메라와 공간 인식을 시작하세요.</div>
+    <div id="start-screen">
+        <div class="start-card">
+            <div class="start-title">AR 측정 시작</div>
+            <div class="start-desc">
+                카메라 권한을 허용한 뒤, 벽과 바닥이 만나는 지점을 기준으로 거리를 측정하고 이미지를 배치합니다.
+            </div>
+            <button id="start-btn">START AR</button>
+            <div id="start-error"></div>
+        </div>
     </div>
 
-    <div id="bottom-panel">
-      <div id="result">주변 공간(벽과 바닥)을 천천히 비춰주세요.</div>
-      <div class="row">
-        <button id="action-btn">1단계: 벽/바닥선 확정</button>
-        <button id="reset-btn" class="danger">초기화</button>
-      </div>
+    <div id="ui-layer">
+        <div id="top-panel">
+            <div id="step-title">AR 준비</div>
+            <div id="guide-text">아래 [START AR] 버튼을 눌러 카메라와 공간 인식을 시작하세요.</div>
+        </div>
+
+        <div id="bottom-panel">
+            <div id="result">주변 공간을 천천히 비춰주세요.</div>
+            <div class="row">
+                <button id="action-btn">기준점 찍기</button>
+                <button id="reset-btn" class="danger">초기화</button>
+            </div>
+        </div>
     </div>
-  </div>
-
-  <script type="module">
-    import * as THREE from "three";
-
-    window.THREE = THREE;
-
-    const uiBottom = document.getElementById("bottom-panel");
-    const stepTitle = document.getElementById("step-title");
-    const guideText = document.getElementById("guide-text");
-    const resultEl = document.getElementById("result");
-    const actionBtn = document.getElementById("action-btn");
-    const resetBtn = document.getElementById("reset-btn");
-
-    let camera = null;
-    let scene = null;
-    let renderer = null;
-
-    /*
-     * 원본 WebXR 흐름과 최대한 맞추기 위한 공통 hit 상태.
-     * currentHitMatrix는 원본 코드와 같은 개념으로 유지하고,
-     * 8th Wall에서는 hit의 position/rotation/distance/type을 함께 보관한다.
-     */
-    let currentHitMatrix = null;
-    let currentHitInfo = null;
-
-    // 단계: ready -> wallFloor -> toe -> placeImage -> done
-    let step = "ready";
-
-    let wallFloorMesh = null;
-    let toeMesh = null;
-    let lineMesh = null;
-    let imagePlane = null;
-
-    let lineStartPoint = null;
-    let lineEndPoint = null;
-    let lineProgress = 0;
-    let isAnimatingLine = false;
-
-    let savedDistanceText = "";
-
-    // 이미지 스펙: 40cm * 50cm -> 0.4m * 0.5m
-    const TARGET_IMAGE_WIDTH_M = 0.4;
-    const TARGET_IMAGE_HEIGHT_M = 0.5;
-    const IMAGE_URL = "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=500";
-
-    /*
-     * 벽면 부착 보정값.
-     * 기존 position.z += 0.01 방식은 월드 z축 기준이라 벽면 방향과 맞지 않을 수 있다.
-     * 이제는 사용자가 벽을 거의 정면으로 바라보는 UX를 기준으로,
-     * 카메라 방향 normal 쪽으로 살짝 앞으로 빼준다.
-     */
-    const WALL_SURFACE_OFFSET_M = 0.012;
-
-    /*
-     * 8th Wall hit-test 후보.
-     * 엔진/환경에 따라 지원 타입이 다를 수 있으므로 surface 계열을 먼저 시도하고,
-     * 실패하면 FEATURE_POINT로 fallback한다.
-     */
-    const HIT_TEST_TYPE_SETS = [
-      ["DETECTED_SURFACE", "ESTIMATED_SURFACE", "FEATURE_POINT"],
-      ["ESTIMATED_SURFACE", "FEATURE_POINT"],
-      ["FEATURE_POINT"]
-    ];
-
-    const HIT_MIN_DISTANCE_M = 0.08;
-    const HIT_MAX_DISTANCE_M = 8.0;
-
-    const Y_AXIS = new THREE.Vector3(0, 1, 0);
-    const PLANE_FRONT_NORMAL = new THREE.Vector3(0, 0, 1);
-
-    actionBtn.addEventListener("click", onActionTriggered);
-    resetBtn.addEventListener("click", resetMeasurement);
-
-    function setStep(nextStep) {
-      step = nextStep;
-      actionBtn.disabled = false;
-
-      if (step === "wallFloor") {
-        setTheme("#00d4ff");
-
-        stepTitle.textContent = "1단계: 벽/바닥선";
-        stepTitle.style.color = "#00d4ff";
-        guideText.textContent = "벽과 바닥이 만나는 기준 지점을 조준점에 맞추고 버튼을 누르세요.";
-
-        actionBtn.textContent = "벽/바닥선 확정";
-        actionBtn.style.background = "#00d4ff";
-        actionBtn.style.color = "#fff";
-
-      } else if (step === "toe") {
-        setTheme("#ffe600");
-
-        stepTitle.textContent = "2단계: 사용자의 발끝";
-        stepTitle.style.color = "#ffe600";
-        guideText.textContent = "한 걸음 물러선 뒤 발끝 지점을 조준점에 맞추고 버튼을 누르세요.";
-
-        actionBtn.textContent = "발끝 확정";
-        actionBtn.style.background = "#ffe600";
-        actionBtn.style.color = "#000";
-
-      } else if (step === "placeImage") {
-        setTheme("#ff00ff");
-
-        stepTitle.textContent = "3단계: 벽면 이미지 배치";
-        stepTitle.style.color = "#ff00ff";
-        guideText.textContent = "벽을 가능한 정면으로 바라본 상태에서, 작품을 붙일 중심 위치를 조준점에 맞춘 뒤 버튼을 누르세요.";
-
-        actionBtn.textContent = "정면 위치에 이미지 부착";
-        actionBtn.style.background = "#ff00ff";
-        actionBtn.style.color = "#fff";
-
-      } else if (step === "done") {
-        setTheme("#ffffff");
-
-        stepTitle.textContent = "모든 배치 완료";
-        stepTitle.style.color = "#00ff66";
-        guideText.textContent = "줄자와 이미지가 고정되었습니다. 자유롭게 확인해 보세요.";
-
-        actionBtn.textContent = "완료됨";
-        actionBtn.style.background = "#374151";
-        actionBtn.style.color = "#fff";
-        actionBtn.disabled = true;
-      }
-    }
-
-    function setTheme(color) {
-      document.documentElement.style.setProperty("--crosshair-color", color);
-    }
-
-    function onActionTriggered() {
-      if (!currentHitInfo || !currentHitMatrix) {
-        alert("공간 분석 대기 중입니다. 평평한 곳이나 벽면을 천천히 비춰주세요.");
-        return;
-      }
-
-      if (!scene || !camera) {
-        alert("AR 장면이 아직 준비되지 않았습니다.");
-        return;
-      }
-
-      if (step === "wallFloor") {
-        const position = currentHitInfo.position.clone();
-
-        wallFloorMesh = createMarkerMesh(position, 0x00d4ff);
-        scene.add(wallFloorMesh);
-
-        resultEl.innerHTML = "벽/바닥 기준점 등록 완료!";
-        setStep("toe");
-
-      } else if (step === "toe") {
-        const position = currentHitInfo.position.clone();
-
-        toeMesh = createMarkerMesh(position, 0xffe600);
-        scene.add(toeMesh);
-
-        /*
-         * 개선점:
-         * 기존 원본은 두 점 사이의 3D 직선거리였다.
-         * 여기서는 벽/바닥 기준점의 y 높이에 발끝점을 투영해서 바닥 기준 수평거리로 계산한다.
-         */
-        lineStartPoint = wallFloorMesh.position.clone();
-        lineEndPoint = toeMesh.position.clone();
-        lineEndPoint.y = lineStartPoint.y;
-
-        const distanceInMeters = lineStartPoint.distanceTo(lineEndPoint);
-        const distanceInCm = Math.round(distanceInMeters * 100);
-
-        savedDistanceText =
-          `<span style="font-size:1.2em; color:#ffe600; font-weight:bold;">` +
-          `★ 벽 ↔ 발끝 거리: ${distanceInCm}cm` +
-          `</span>`;
-
-        lineMesh = createMeasureLineMesh(0x00ff66);
-        scene.add(lineMesh);
-
-        lineProgress = 0;
-        isAnimatingLine = true;
-        updateMeasureLine(lineMesh, lineStartPoint, lineStartPoint);
-
-        resultEl.innerHTML =
-          savedDistanceText +
-          "<br><span style='color:#ff00ff;'>이제 벽면 정면에 이미지를 부착할 차례입니다.</span>";
-
-        setStep("placeImage");
-
-      } else if (step === "placeImage") {
-        placeImageAtCurrentHit();
-      }
-    }
-
-    function createMarkerMesh(position, color) {
-      const geometry = new THREE.SphereGeometry(0.02, 32, 32);
-      const material = new THREE.MeshStandardMaterial({
-        color,
-        roughness: 0.55,
-        metalness: 0
-      });
-
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.copy(position);
-      mesh.scale.setScalar(0.001);
-
-      return mesh;
-    }
-
-    function createMeasureLineMesh(color) {
-      /*
-       * 개선점:
-       * THREE.LineBasicMaterial linewidth는 모바일 WebGL에서 대부분 무시된다.
-       * 그래서 cylinder mesh로 줄자를 만든다.
-       */
-      const geometry = new THREE.CylinderGeometry(0.008, 0.008, 1, 16);
-      const material = new THREE.MeshBasicMaterial({
-        color
-      });
-
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.visible = false;
-
-      return mesh;
-    }
-
-    function updateMeasureLine(mesh, start, end) {
-      if (!mesh || !start || !end) return;
-
-      const direction = new THREE.Vector3().subVectors(end, start);
-      const length = direction.length();
-
-      if (length < 0.0001) {
-        mesh.visible = false;
-        return;
-      }
-
-      mesh.visible = true;
-
-      const midPoint = new THREE.Vector3()
-        .addVectors(start, end)
-        .multiplyScalar(0.5);
-
-      mesh.position.copy(midPoint);
-
-      direction.normalize();
-      mesh.quaternion.setFromUnitVectors(Y_AXIS, direction);
-
-      /*
-       * geometry 기본 높이를 1로 만들었기 때문에 y scale을 길이로 사용한다.
-       */
-      mesh.scale.set(1, length, 1);
-    }
-
-    function placeImageAtCurrentHit() {
-      const hitInfo = currentHitInfo;
-
-      const textureLoader = new THREE.TextureLoader();
-      textureLoader.setCrossOrigin("anonymous");
-
-      textureLoader.load(
-        IMAGE_URL,
-        (texture) => {
-          applyTextureColorSpace(texture);
-          createImagePlane(texture, hitInfo, false);
-        },
-        undefined,
-        () => {
-          const fallbackTexture = createFallbackTexture();
-          createImagePlane(fallbackTexture, hitInfo, true);
-        }
-      );
-    }
-
-    function createImagePlane(texture, hitInfo, isFallback) {
-      if (!hitInfo) return;
-
-      const imageGeometry = new THREE.PlaneGeometry(
-        TARGET_IMAGE_WIDTH_M,
-        TARGET_IMAGE_HEIGHT_M
-      );
-
-      const imageMaterial = new THREE.MeshBasicMaterial({
-        map: texture,
-        side: THREE.DoubleSide,
-        toneMapped: false
-      });
-
-      imagePlane = new THREE.Mesh(imageGeometry, imageMaterial);
-
-      /*
-       * 핵심 개선점:
-       * 기존 imagePlane.position.z += 0.01 제거.
-       * 월드 z축이 아니라, 사용자가 벽을 정면으로 바라보는 UX를 기준으로
-       * 카메라 쪽 normal 방향으로 1.2cm 앞으로 빼준다.
-       */
-      const normal = getBestWallFacingNormal(hitInfo);
-      const correctedPosition = hitInfo.position
-        .clone()
-        .add(normal.clone().multiplyScalar(WALL_SURFACE_OFFSET_M));
-
-      imagePlane.position.copy(correctedPosition);
-
-      /*
-       * PlaneGeometry의 앞면 normal은 local +Z.
-       * local +Z가 카메라 쪽 normal을 향하도록 회전시킨다.
-       */
-      imagePlane.quaternion.setFromUnitVectors(
-        PLANE_FRONT_NORMAL,
-        normal
-      );
-
-      imagePlane.renderOrder = 10;
-
-      scene.add(imagePlane);
-
-      resultEl.innerHTML =
-        savedDistanceText +
-        `<br><span style="color:#00ff66;">` +
-        `${isFallback ? "대체 이미지로 " : ""}선택한 벽면에 이미지 부착 완료!` +
-        `</span>`;
-
-      setStep("done");
-    }
-
-    function getBestWallFacingNormal(hitInfo) {
-      /*
-       * 현실적인 UX 기준:
-       * 벽면 normal 자동 추정보다, 사용자가 벽을 거의 정면으로 바라보고 누르는 방식을 기준으로 한다.
-       * 그래서 항상 카메라를 향하는 수평 normal을 사용한다.
-       *
-       * 이렇게 해야 비스듬한 hit rotation이나 FEATURE_POINT rotation 때문에
-       * 이미지가 엉뚱하게 틀어지는 현상을 줄일 수 있다.
-       */
-      return getCameraFacingHorizontalNormal(hitInfo.position);
-    }
-
-    function getCameraFacingHorizontalNormal(targetPosition) {
-      const cameraPosition = new THREE.Vector3();
-
-      if (camera && camera.getWorldPosition) {
-        camera.getWorldPosition(cameraPosition);
-      } else if (camera) {
-        cameraPosition.copy(camera.position);
-      }
-
-      const normal = new THREE.Vector3()
-        .subVectors(cameraPosition, targetPosition);
-
-      normal.y = 0;
-
-      if (normal.lengthSq() < 0.000001 && camera) {
-        const cameraDirection = new THREE.Vector3();
-        camera.getWorldDirection(cameraDirection);
-
-        normal.copy(cameraDirection).multiplyScalar(-1);
-        normal.y = 0;
-      }
-
-      if (normal.lengthSq() < 0.000001) {
-        normal.set(0, 0, 1);
-      }
-
-      normal.normalize();
-
-      return normal;
-    }
-
-    function updateAnimations() {
-      animateMarkerScale(wallFloorMesh);
-      animateMarkerScale(toeMesh);
-
-      if (isAnimatingLine && lineMesh && lineStartPoint && lineEndPoint) {
-        lineProgress += 0.05;
-
-        if (lineProgress >= 1) {
-          lineProgress = 1;
-          isAnimatingLine = false;
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // 8th Wall의 Threejs pipelineModule이 전역 THREE를 참조할 수 있도록 노출
+        window.THREE = THREE;
+
+        const canvas = document.getElementById('camerafeed');
+        const startScreen = document.getElementById('start-screen');
+        const startBtn = document.getElementById('start-btn');
+        const startError = document.getElementById('start-error');
+
+        const uiBottom = document.getElementById('bottom-panel');
+        const stepTitle = document.getElementById('step-title');
+        const guideText = document.getElementById('guide-text');
+        const resultEl = document.getElementById('result');
+        const actionBtn = document.getElementById('action-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const crosshair = document.getElementById('crosshair');
+
+        let scene = null;
+        let camera = null;
+        let renderer = null;
+
+        let xrStarted = false;
+        let pipelineInstalled = false;
+
+        // 단계: ready -> wallFloor -> toe -> placeImage -> done
+        let step = 'ready';
+
+        // 8th Wall hitTest 결과 위치
+        let currentHitPosition = null;
+        let hasRecentHit = false;
+
+        let wallFloorMesh = null;
+        let toeMesh = null;
+        let lineMesh = null;
+        let imagePlane = null;
+
+        let lineProgress = 0;
+        let isAnimatingLine = false;
+        let savedDistanceText = '';
+
+        // 이미지 스펙: 40cm * 50cm
+        const TARGET_IMAGE_WIDTH_M = 0.4;
+        const TARGET_IMAGE_HEIGHT_M = 0.5;
+        const IMAGE_URL = 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=500';
+
+        const HIT_TYPES = [
+            'ESTIMATED_SURFACE',
+            'DETECTED_SURFACE',
+            'FEATURE_POINT'
+        ];
+
+        startBtn.addEventListener('click', startAR);
+        actionBtn.addEventListener('click', onActionTriggered);
+        resetBtn.addEventListener('click', resetMeasurement);
+
+        window.addEventListener('resize', () => {
+            if (!camera || !renderer) return;
+
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function waitForXR8() {
+            return new Promise((resolve, reject) => {
+                if (window.XR8) {
+                    resolve(window.XR8);
+                    return;
+                }
+
+                const timeoutId = setTimeout(() => {
+                    reject(new Error('8th Wall Engine을 불러오지 못했습니다.'));
+                }, 12000);
+
+                window.addEventListener('xrloaded', () => {
+                    clearTimeout(timeoutId);
+                    resolve(window.XR8);
+                }, { once: true });
+            });
         }
 
-        const currentEnd = new THREE.Vector3().lerpVectors(
-          lineStartPoint,
-          lineEndPoint,
-          lineProgress
-        );
+        async function startAR() {
+            if (xrStarted) return;
 
-        updateMeasureLine(lineMesh, lineStartPoint, currentEnd);
-      }
-    }
+            startBtn.disabled = true;
+            startBtn.textContent = 'AR 준비 중...';
+            startError.textContent = '';
 
-    function animateMarkerScale(mesh) {
-      if (!mesh) return;
+            try {
+                const XR8 = await waitForXR8();
 
-      if (mesh.scale.x < 1) {
-        const nextScale = Math.min(1, mesh.scale.x + 0.08);
-        mesh.scale.setScalar(nextScale);
-      }
-    }
+                // 실제 미터 단위에 가까운 좌표계를 사용
+                XR8.XrController.configure({
+                    disableWorldTracking: false,
+                    scale: 'absolute'
+                });
 
-    function updateHitTest() {
-      if (!window.XR8 || !XR8.XrController) return;
+                if (!pipelineInstalled) {
+                    XR8.addCameraPipelineModules([
+                        // 카메라 피드 렌더링
+                        XR8.GlTextureRenderer.pipelineModule(),
 
-      const hitInfo = get8thWallHitInfo(0.5, 0.5);
+                        // Three.js scene/camera/renderer 생성 및 렌더링
+                        XR8.Threejs.pipelineModule(),
 
-      if (hitInfo) {
-        currentHitInfo = hitInfo;
-        currentHitMatrix = hitInfo.matrixArray;
+                        // SLAM / 월드 트래킹
+                        XR8.XrController.pipelineModule(),
 
-        if (step !== "done" && step !== "placeImage") {
-          resultEl.textContent = "공간 인식 성공! 확정 버튼을 누르세요.";
-        } else if (step === "placeImage") {
-          resultEl.innerHTML =
-            savedDistanceText +
-            "<br>벽을 가능한 정면으로 바라보고, 부착할 중심 위치를 조준하세요.";
+                        // 우리 앱 로직
+                        arMeasurePipelineModule()
+                    ]);
+
+                    pipelineInstalled = true;
+                }
+
+                XR8.run({
+                    canvas,
+                    allowedDevices: XR8.XrConfig.device().ANY
+                });
+
+                xrStarted = true;
+
+                startScreen.style.display = 'none';
+                uiBottom.style.display = 'block';
+                crosshair.style.display = 'block';
+
+                setStep('wallFloor');
+            } catch (error) {
+                startBtn.disabled = false;
+                startBtn.textContent = 'START AR';
+                startError.textContent = error.message || 'AR 시작 중 오류가 발생했습니다.';
+            }
         }
 
-      } else {
-        currentHitInfo = null;
-        currentHitMatrix = null;
+        function arMeasurePipelineModule() {
+            return {
+                name: 'unionart-ar-measure',
 
-        if (step !== "done") {
-          resultEl.textContent = "평면을 탐색 중입니다...";
-        }
-      }
-    }
+                onStart: ({ canvasWidth, canvasHeight }) => {
+                    const xrScene = XR8.Threejs.xrScene();
 
-    function get8thWallHitInfo(x, y) {
-      let hitResults = null;
+                    scene = xrScene.scene;
+                    camera = xrScene.camera;
+                    renderer = xrScene.renderer;
 
-      /*
-       * surface 계열을 먼저 시도하고, 실패하면 FEATURE_POINT로 fallback.
-       * 지원하지 않는 타입이 들어가면 catch 후 다음 조합으로 넘어간다.
-       */
-      for (const types of HIT_TEST_TYPE_SETS) {
-        try {
-          const results = XR8.XrController.hitTest(x, y, types);
+                    renderer.setPixelRatio(window.devicePixelRatio);
+                    renderer.setSize(window.innerWidth, window.innerHeight);
 
-          if (results && results.length > 0) {
-            hitResults = results;
-            break;
-          }
-        } catch (error) {
-          // 해당 타입 조합을 지원하지 않는 환경이면 다음 fallback으로 진행.
-        }
-      }
+                    scene.add(new THREE.HemisphereLight(0xffffff, 0xbbbbff, 3));
 
-      if (!hitResults || hitResults.length === 0) {
-        return null;
-      }
+                    const light = new THREE.DirectionalLight(0xffffff, 1.2);
+                    light.position.set(0.5, 1, 0.25);
+                    scene.add(light);
 
-      const hit = chooseBestHit(hitResults);
+                    // 8th Wall 카메라 투영/시작 위치 동기화
+                    XR8.XrController.updateCameraProjectionMatrix({
+                        origin: camera.position,
+                        facing: camera.quaternion
+                    });
+                },
 
-      if (!hit || !hit.position) {
-        return null;
-      }
-
-      const position = new THREE.Vector3(
-        Number(hit.position.x),
-        Number(hit.position.y),
-        Number(hit.position.z)
-      );
-
-      if (!isFiniteVector3(position)) {
-        return null;
-      }
-
-      const distance =
-        typeof hit.distance === "number" && Number.isFinite(hit.distance)
-          ? hit.distance
-          : null;
-
-      if (
-        distance !== null &&
-        (distance < HIT_MIN_DISTANCE_M || distance > HIT_MAX_DISTANCE_M)
-      ) {
-        return null;
-      }
-
-      const quaternion = hit.rotation
-        ? new THREE.Quaternion(
-            Number(hit.rotation.x) || 0,
-            Number(hit.rotation.y) || 0,
-            Number(hit.rotation.z) || 0,
-            Number(hit.rotation.w) || 1
-          )
-        : new THREE.Quaternion();
-
-      if (!isFiniteQuaternion(quaternion)) {
-        quaternion.identity();
-      }
-
-      const matrix = new THREE.Matrix4();
-      matrix.compose(
-        position,
-        quaternion,
-        new THREE.Vector3(1, 1, 1)
-      );
-
-      return {
-        raw: hit,
-        type: hit.type || "FEATURE_POINT",
-        distance,
-        position,
-        quaternion,
-        matrix,
-        matrixArray: matrix.toArray()
-      };
-    }
-
-    function chooseBestHit(hitResults) {
-      /*
-       * 여러 결과가 들어오면 surface 계열을 우선한다.
-       * 같은 우선순위라면 카메라와 가까운 hit를 우선한다.
-       */
-      return [...hitResults].sort((a, b) => {
-        const priorityA = getHitPriority(a);
-        const priorityB = getHitPriority(b);
-
-        if (priorityA !== priorityB) {
-          return priorityB - priorityA;
+                onUpdate: () => {
+                    updateHitTest();
+                    updateLineAnimation();
+                    updateMarkerAnimation();
+                    updateStatusText();
+                }
+            };
         }
 
-        const distanceA =
-          typeof a.distance === "number" && Number.isFinite(a.distance)
-            ? a.distance
-            : Number.POSITIVE_INFINITY;
+        function updateHitTest() {
+            if (!window.XR8 || !canvas) return;
 
-        const distanceB =
-          typeof b.distance === "number" && Number.isFinite(b.distance)
-            ? b.distance
-            : Number.POSITIVE_INFINITY;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
 
-        return distanceA - distanceB;
-      })[0];
-    }
+            let hitResults = [];
 
-    function getHitPriority(hit) {
-      const typeText = String(hit && hit.type ? hit.type : "").toUpperCase();
+            try {
+                hitResults = XR8.XrController.hitTest(centerX, centerY, HIT_TYPES) || [];
+            } catch (error) {
+                hitResults = [];
+            }
 
-      if (typeText.includes("DETECTED_SURFACE")) return 40;
-      if (typeText.includes("ESTIMATED_SURFACE")) return 30;
-      if (typeText.includes("SURFACE")) return 25;
-      if (typeText.includes("PLANE")) return 20;
-      if (typeText.includes("FEATURE_POINT")) return 10;
+            const hit = chooseBestHit(hitResults);
+            const position = hit ? getPositionFromHit(hit) : null;
 
-      return 1;
-    }
-
-    function isFiniteVector3(vector) {
-      return (
-        Number.isFinite(vector.x) &&
-        Number.isFinite(vector.y) &&
-        Number.isFinite(vector.z)
-      );
-    }
-
-    function isFiniteQuaternion(quaternion) {
-      return (
-        Number.isFinite(quaternion.x) &&
-        Number.isFinite(quaternion.y) &&
-        Number.isFinite(quaternion.z) &&
-        Number.isFinite(quaternion.w)
-      );
-    }
-
-    function resetMeasurement() {
-      disposeObject3D(wallFloorMesh);
-      disposeObject3D(toeMesh);
-      disposeObject3D(lineMesh);
-      disposeObject3D(imagePlane);
-
-      wallFloorMesh = null;
-      toeMesh = null;
-      lineMesh = null;
-      imagePlane = null;
-
-      lineStartPoint = null;
-      lineEndPoint = null;
-      lineProgress = 0;
-      isAnimatingLine = false;
-
-      savedDistanceText = "";
-      currentHitInfo = null;
-      currentHitMatrix = null;
-
-      resultEl.textContent = "주변 공간(벽과 바닥)을 천천히 비춰주세요.";
-
-      if (scene) {
-        setStep("wallFloor");
-      } else {
-        step = "ready";
-      }
-    }
-
-    function disposeObject3D(object) {
-      if (!object) return;
-
-      if (object.parent) {
-        object.parent.remove(object);
-      }
-
-      object.traverse((child) => {
-        if (child.geometry) {
-          child.geometry.dispose();
+            if (position) {
+                currentHitPosition = position;
+                hasRecentHit = true;
+            } else {
+                currentHitPosition = null;
+                hasRecentHit = false;
+            }
         }
 
-        if (child.material) {
-          const materials = Array.isArray(child.material)
-            ? child.material
-            : [child.material];
+        function chooseBestHit(hitResults) {
+            if (!hitResults || hitResults.length === 0) return null;
 
-          materials.forEach((material) => {
-            if (material.map) {
-              material.map.dispose();
+            // 가능하면 표면 인식 결과 우선
+            const surfaceHit = hitResults.find((hit) => {
+                const type = String(hit.type || hit.hitType || '').toUpperCase();
+                return type.includes('SURFACE');
+            });
+
+            return surfaceHit || hitResults[0];
+        }
+
+        function getPositionFromHit(hit) {
+            const candidates = [
+                hit.position,
+                hit.worldPosition,
+                hit.point,
+                hit.intersection,
+                hit.transform && hit.transform.position,
+                hit.pose && hit.pose.position
+            ];
+
+            for (const p of candidates) {
+                if (!p) continue;
+
+                if (Array.isArray(p) && p.length >= 3) {
+                    return new THREE.Vector3(Number(p[0]), Number(p[1]), Number(p[2]));
+                }
+
+                if (
+                    typeof p.x === 'number' &&
+                    typeof p.y === 'number' &&
+                    typeof p.z === 'number'
+                ) {
+                    return new THREE.Vector3(p.x, p.y, p.z);
+                }
+            }
+
+            return null;
+        }
+
+        function setStep(nextStep) {
+            step = nextStep;
+
+            document.body.classList.remove(
+                'step-wallFloor',
+                'step-toe',
+                'step-placeImage',
+                'step-done'
+            );
+            document.body.classList.add(`step-${step}`);
+
+            if (step === 'wallFloor') {
+                stepTitle.textContent = '1단계: 벽/바닥 기준점';
+                stepTitle.style.color = '#00d4ff';
+                guideText.textContent = '벽면과 바닥이 만나는 모서리 지점을 조준점에 맞추고 버튼을 누르세요.';
+                actionBtn.textContent = '기준점 찍기';
+                actionBtn.style.background = '#00d4ff';
+                actionBtn.style.color = '#fff';
+            } else if (step === 'toe') {
+                stepTitle.textContent = '2단계: 사용자의 발끝';
+                stepTitle.style.color = '#ffe600';
+                guideText.textContent = '한 걸음 물러선 대상의 발끝 지점을 조준점에 맞추고 버튼을 누르세요.';
+                actionBtn.textContent = '발끝 찍기';
+                actionBtn.style.background = '#ffe600';
+                actionBtn.style.color = '#000';
+            } else if (step === 'placeImage') {
+                stepTitle.textContent = '3단계: 벽면 이미지 배치';
+                stepTitle.style.color = '#ff00ff';
+                guideText.textContent = '정면을 바라본 상태에서 버튼을 눌러 이미지를 배치하세요.';
+                actionBtn.textContent = '작품 배치하기';
+                actionBtn.style.background = '#ff00ff';
+                actionBtn.style.color = '#fff';
+            } else if (step === 'done') {
+                stepTitle.textContent = '배치 완료';
+                stepTitle.style.color = '#00ff66';
+                guideText.textContent = '줄자와 이미지가 고정되었습니다. 자유롭게 확인해 보세요.';
+                actionBtn.textContent = '완료됨';
+                actionBtn.style.background = '#374151';
+                actionBtn.style.color = '#fff';
+            }
+        }
+
+        function onActionTriggered() {
+            if (!scene || !camera) {
+                resultEl.innerHTML = `
+                    <span style="color:#ffcc00; font-weight:900;">AR 장면을 준비 중입니다.</span><br>
+                    <span>잠시 후 다시 눌러주세요.</span>
+                `;
+                return;
+            }
+
+            // 3단계는 기준점/발끝을 이미 확보했으므로 hitTest 실패와 무관하게 진행
+            if (!currentHitPosition && step !== 'placeImage') {
+                resultEl.innerHTML = `
+                    <span style="color:#ffcc00; font-weight:900;">
+                        아직 공간을 인식하지 못했습니다.
+                    </span><br>
+                    <span style="font-size:0.95em;">
+                        벽과 바닥이 만나는 부분을 천천히 비춰주세요.
+                    </span>
+                `;
+                return;
+            }
+
+            if (step === 'wallFloor') {
+                wallFloorMesh = createPointMesh(0x00d4ff);
+                wallFloorMesh.position.copy(currentHitPosition);
+                wallFloorMesh.scale.set(0, 0, 0);
+                scene.add(wallFloorMesh);
+
+                resultEl.innerHTML = '벽/바닥 기준점 등록 완료!';
+                setStep('toe');
+
+            } else if (step === 'toe') {
+                toeMesh = createPointMesh(0xffe600);
+                toeMesh.position.copy(currentHitPosition);
+                toeMesh.scale.set(0, 0, 0);
+                scene.add(toeMesh);
+
+                const lineGeometry = new THREE.BufferGeometry();
+                const lineMaterial = new THREE.LineBasicMaterial({
+                    color: 0x00ff66,
+                    linewidth: 5
+                });
+
+                lineMesh = new THREE.Line(lineGeometry, lineMaterial);
+                scene.add(lineMesh);
+
+                lineProgress = 0;
+                isAnimatingLine = true;
+
+                // 바닥 거리 기준으로 계산: Y축 오차 제외
+                const dx = wallFloorMesh.position.x - toeMesh.position.x;
+                const dz = wallFloorMesh.position.z - toeMesh.position.z;
+                const distanceInMeters = Math.sqrt(dx * dx + dz * dz);
+                const distanceInCm = Math.round(distanceInMeters * 100);
+
+                savedDistanceText = `
+                    <span style="font-size:1.2em; color:#ffe600; font-weight:900;">
+                        ★ 벽 ↔ 발끝 거리: ${distanceInCm}cm
+                    </span>
+                `;
+
+                resultEl.innerHTML = savedDistanceText + `
+                    <br>
+                    <span style="color:#ff00ff;">
+                        원하는 벽면 높이 방향을 바라보고 버튼을 누르세요!
+                    </span>
+                `;
+
+                setStep('placeImage');
+
+            } else if (step === 'placeImage') {
+                placeImageOnVirtualWall();
+
+            } else if (step === 'done') {
+                resultEl.innerHTML = `
+                    ${savedDistanceText}
+                    <br>
+                    <span style="color:#00ff66;">이미 배치가 완료되었습니다.</span>
+                `;
+            }
+        }
+
+        function createPointMesh(color) {
+            const geometry = new THREE.SphereGeometry(0.02, 32, 32);
+            const material = new THREE.MeshStandardMaterial({
+                color,
+                roughness: 0.5,
+                metalness: 0
+            });
+
+            return new THREE.Mesh(geometry, material);
+        }
+
+        function placeImageOnVirtualWall() {
+            if (!wallFloorMesh || !toeMesh) {
+                resultEl.innerHTML = `
+                    <span style="color:#ffcc00; font-weight:900;">
+                        기준점과 발끝 정보가 없습니다.
+                    </span><br>
+                    <span>초기화 후 다시 진행해주세요.</span>
+                `;
+                return;
+            }
+
+            const textureLoader = new THREE.TextureLoader();
+            textureLoader.crossOrigin = 'anonymous';
+
+            resultEl.innerHTML = savedDistanceText + `
+                <br>
+                <span style="color:#ff00ff;">이미지를 불러오는 중입니다...</span>
+            `;
+
+            textureLoader.load(
+                IMAGE_URL,
+                (texture) => {
+                    if (imagePlane) {
+                        disposeObject(imagePlane);
+                        imagePlane = null;
+                    }
+
+                    const imageGeometry = new THREE.PlaneGeometry(
+                        TARGET_IMAGE_WIDTH_M,
+                        TARGET_IMAGE_HEIGHT_M
+                    );
+
+                    const imageMaterial = new THREE.MeshBasicMaterial({
+                        map: texture,
+                        side: THREE.DoubleSide,
+                        toneMapped: false
+                    });
+
+                    imagePlane = new THREE.Mesh(imageGeometry, imageMaterial);
+
+                    // X/Z는 1단계 벽/바닥 기준점 계승
+                    imagePlane.position.copy(wallFloorMesh.position);
+
+                    // Y는 현재 카메라 월드 높이 사용
+                    const cameraWorldPosition = new THREE.Vector3();
+                    camera.updateMatrixWorld(true);
+                    camera.getWorldPosition(cameraWorldPosition);
+                    imagePlane.position.y = cameraWorldPosition.y;
+
+                    // 벽 기준점 -> 발끝 방향을 사용자 방향으로 간주
+                    const wallToUser = new THREE.Vector3().subVectors(
+                        toeMesh.position,
+                        wallFloorMesh.position
+                    );
+                    wallToUser.y = 0;
+
+                    if (wallToUser.lengthSq() < 0.0001) {
+                        camera.getWorldDirection(wallToUser);
+                        wallToUser.y = 0;
+                        wallToUser.multiplyScalar(-1);
+                    }
+
+                    wallToUser.normalize();
+
+                    // 벽면과 겹침 방지: 사용자 방향으로 1.5cm 띄움
+                    imagePlane.position.addScaledVector(wallToUser, 0.015);
+
+                    // 이미지가 사용자 방향을 향하도록 회전
+                    const lookTarget = imagePlane.position.clone().add(wallToUser);
+                    imagePlane.lookAt(lookTarget);
+
+                    scene.add(imagePlane);
+
+                    resultEl.innerHTML = savedDistanceText + `
+                        <br>
+                        <span style="color:#00ff66;">가상 벽면에 이미지 배치 완료!</span>
+                    `;
+
+                    setStep('done');
+                },
+                undefined,
+                () => {
+                    resultEl.innerHTML = savedDistanceText + `
+                        <br>
+                        <span style="color:#ffcc00; font-weight:900;">
+                            이미지를 불러오지 못했습니다.
+                        </span>
+                    `;
+                }
+            );
+        }
+
+        function updateMarkerAnimation() {
+            if (wallFloorMesh && wallFloorMesh.scale.x < 1) {
+                wallFloorMesh.scale.addScalar(0.08);
+                wallFloorMesh.scale.min(new THREE.Vector3(1, 1, 1));
+            }
+
+            if (toeMesh && toeMesh.scale.x < 1) {
+                toeMesh.scale.addScalar(0.08);
+                toeMesh.scale.min(new THREE.Vector3(1, 1, 1));
+            }
+        }
+
+        function updateLineAnimation() {
+            if (!isAnimatingLine || !wallFloorMesh || !toeMesh || !lineMesh) return;
+
+            lineProgress += 0.05;
+
+            if (lineProgress >= 1) {
+                lineProgress = 1;
+                isAnimatingLine = false;
+            }
+
+            const currentLineEnd = new THREE.Vector3().lerpVectors(
+                wallFloorMesh.position,
+                toeMesh.position,
+                lineProgress
+            );
+
+            lineMesh.geometry.setFromPoints([
+                wallFloorMesh.position,
+                currentLineEnd
+            ]);
+        }
+
+        function updateStatusText() {
+            if (step === 'done') return;
+
+            if (step === 'placeImage') {
+                resultEl.innerHTML = savedDistanceText + `
+                    <br>
+                    <span style="color:#ff00ff;">
+                        원하는 벽면 높이 방향을 바라보고 버튼을 누르세요!
+                    </span>
+                `;
+                return;
+            }
+
+            if (hasRecentHit) {
+                resultEl.textContent = '공간 인식 성공! 확정 버튼을 누르세요.';
+            } else {
+                resultEl.textContent = '공간을 탐색 중입니다...';
+            }
+        }
+
+        function resetMeasurement() {
+            if (wallFloorMesh) {
+                disposeObject(wallFloorMesh);
+                wallFloorMesh = null;
+            }
+
+            if (toeMesh) {
+                disposeObject(toeMesh);
+                toeMesh = null;
+            }
+
+            if (lineMesh) {
+                disposeObject(lineMesh);
+                lineMesh = null;
+            }
+
+            if (imagePlane) {
+                disposeObject(imagePlane);
+                imagePlane = null;
+            }
+
+            lineProgress = 0;
+            isAnimatingLine = false;
+            savedDistanceText = '';
+
+            resultEl.textContent = '주변 공간을 천천히 비춰주세요.';
+
+            if (xrStarted) {
+                setStep('wallFloor');
+            }
+        }
+
+        function disposeObject(object) {
+            if (!object) return;
+
+            if (object.parent) {
+                object.parent.remove(object);
+            }
+
+            if (object.geometry) {
+                object.geometry.dispose();
+            }
+
+            if (object.material) {
+                if (Array.isArray(object.material)) {
+                    object.material.forEach(disposeMaterial);
+                } else {
+                    disposeMaterial(object.material);
+                }
+            }
+        }
+
+        function disposeMaterial(material) {
+            if (!material) return;
+
+            for (const key in material) {
+                const value = material[key];
+
+                if (value && typeof value.dispose === 'function') {
+                    value.dispose();
+                }
             }
 
             material.dispose();
-          });
         }
-      });
-    }
-
-    function createFallbackTexture() {
-      const canvas = document.createElement("canvas");
-      canvas.width = 512;
-      canvas.height = 640;
-
-      const ctx = canvas.getContext("2d");
-
-      const gradient = ctx.createLinearGradient(0, 0, 512, 640);
-      gradient.addColorStop(0, "#ff00ff");
-      gradient.addColorStop(1, "#111827");
-
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 512, 640);
-
-      ctx.fillStyle = "#ffffff";
-      ctx.textAlign = "center";
-      ctx.font = "bold 54px system-ui";
-      ctx.fillText("IMAGE", 256, 300);
-
-      ctx.font = "26px system-ui";
-      ctx.fillText("40cm × 50cm", 256, 350);
-
-      const texture = new THREE.CanvasTexture(canvas);
-      applyTextureColorSpace(texture);
-
-      return texture;
-    }
-
-    function applyTextureColorSpace(texture) {
-      if (!texture) return;
-
-      if ("colorSpace" in texture && THREE.SRGBColorSpace) {
-        texture.colorSpace = THREE.SRGBColorSpace;
-      }
-    }
-
-    function initScenePipelineModule() {
-      return {
-        name: "webxr-style-wall-measurement-port-improved-front-facing-wall-ux",
-
-        onStart: () => {
-          const xrScene = XR8.Threejs.xrScene();
-
-          scene = xrScene.scene;
-          camera = xrScene.camera;
-          renderer = xrScene.renderer;
-
-          if (renderer) {
-            renderer.setPixelRatio(
-              Math.min(window.devicePixelRatio || 1, 2)
-            );
-
-            if ("outputColorSpace" in renderer && THREE.SRGBColorSpace) {
-              renderer.outputColorSpace = THREE.SRGBColorSpace;
-            }
-          }
-
-          const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 3);
-          light.position.set(0.5, 1, 0.25);
-          scene.add(light);
-
-          uiBottom.style.display = "block";
-          resultEl.textContent = "주변 공간(벽과 바닥)을 천천히 비춰주세요.";
-
-          setStep("wallFloor");
-        },
-
-        onUpdate: () => {
-          if (!scene || !camera) return;
-
-          updateAnimations();
-          updateHitTest();
-        }
-      };
-    }
-
-    function onxrloaded() {
-      XR8.XrController.configure({
-        disableWorldTracking: false,
-        enableWorldPoints: true,
-        scale: "absolute"
-      });
-
-      const modules = [
-        XR8.GlTextureRenderer.pipelineModule(),
-        XR8.Threejs.pipelineModule(),
-        XR8.XrController.pipelineModule()
-      ];
-
-      if (window.LandingPage && window.LandingPage.pipelineModule) {
-        modules.push(window.LandingPage.pipelineModule());
-      }
-
-      if (window.XRExtras) {
-        if (XRExtras.FullWindowCanvas) {
-          modules.push(XRExtras.FullWindowCanvas.pipelineModule());
-        }
-
-        if (XRExtras.Loading) {
-          modules.push(XRExtras.Loading.pipelineModule());
-        }
-
-        if (XRExtras.RuntimeError) {
-          modules.push(XRExtras.RuntimeError.pipelineModule());
-        }
-      }
-
-      modules.push(initScenePipelineModule());
-
-      XR8.addCameraPipelineModules(modules);
-
-      XR8.run({
-        canvas: document.getElementById("camerafeed"),
-        allowedDevices: XR8.XrConfig.device().ANY
-      });
-    }
-
-    if (window.XR8) {
-      onxrloaded();
-    } else {
-      window.addEventListener("xrloaded", onxrloaded);
-    }
-  </script>
+    </script>
 </body>
+
 </html>
