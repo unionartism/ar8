@@ -7,10 +7,7 @@
     <title>8th Wall 벽면 거리 측정 및 이미지 배치 AR 테스트</title>
 
     <!-- 8th Wall Engine Binary -->
-    <script
-        src="https://cdn.jsdelivr.net/npm/@8thwall/engine-binary@1/dist/xr.js"
-        async
-        crossorigin="anonymous"
+    <script src="https://cdn.jsdelivr.net/npm/@8thwall/engine-binary@1/dist/xr.js" async crossorigin="anonymous"
         data-preload-chunks="slam"></script>
 
     <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
@@ -329,11 +326,7 @@
         const TARGET_IMAGE_HEIGHT_M = 0.5;
         const IMAGE_URL = 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=500';
 
-        const HIT_TYPES = [
-            'ESTIMATED_SURFACE',
-            'DETECTED_SURFACE',
-            'FEATURE_POINT'
-        ];
+        const HIT_TYPES = ['FEATURE_POINT'];
 
         startBtn.addEventListener('click', startAR);
         actionBtn.addEventListener('click', onActionTriggered);
@@ -440,8 +433,14 @@
 
                     // 8th Wall 카메라 투영/시작 위치 동기화
                     XR8.XrController.updateCameraProjectionMatrix({
-                        origin: camera.position,
-                        facing: camera.quaternion
+                        cam: {
+                            pixelRectWidth: canvasWidth,
+                            pixelRectHeight: canvasHeight,
+                            nearClipPlane: 0.01,
+                            farClipPlane: 1000
+                        },
+                        origin: { x: 0, y: 1.5, z: 0 },
+                        facing: { w: 1, x: 0, y: 0, z: 0 }
                     });
                 },
 
@@ -457,18 +456,17 @@
         function updateHitTest() {
             if (!window.XR8 || !canvas) return;
 
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-
             let hitResults = [];
 
             try {
-                hitResults = XR8.XrController.hitTest(centerX, centerY, HIT_TYPES) || [];
+                // 8th Wall hitTest는 픽셀 좌표가 아니라 0~1 정규화 좌표 사용
+                // 화면 중앙 조준점 = 0.5, 0.5
+                hitResults = XR8.XrController.hitTest(0.5, 0.5, HIT_TYPES) || [];
             } catch (error) {
                 hitResults = [];
             }
 
-            const hit = chooseBestHit(hitResults);
+            const hit = hitResults[0];
             const position = hit ? getPositionFromHit(hit) : null;
 
             if (position) {
