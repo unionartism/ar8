@@ -331,6 +331,8 @@
         let isLoadingImage = false;
         let autoStatusLockedUntil = 0;
 
+        let lastStatusText = '';
+
         const TARGET_IMAGE_WIDTH_M = 0.4;
         const TARGET_IMAGE_HEIGHT_M = 0.5;
         const IMAGE_URL = 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=500';
@@ -354,6 +356,7 @@
 
         function setResultHTML(html, lockMs = 0) {
             resultEl.innerHTML = html;
+            lastStatusText = html; // 캐시 동기화
             if (lockMs > 0) {
                 autoStatusLockedUntil = performance.now() + lockMs;
             }
@@ -361,11 +364,11 @@
 
         function setResultText(text, lockMs = 0) {
             resultEl.textContent = text;
+            lastStatusText = text; // 캐시 동기화
             if (lockMs > 0) {
                 autoStatusLockedUntil = performance.now() + lockMs;
             }
         }
-
         function waitForXR8() {
             return new Promise((resolve, reject) => {
                 if (window.XR8) {
@@ -436,7 +439,7 @@
                     camera = xrScene.camera;
                     renderer = xrScene.renderer;
 
-                    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5)); // 2 -> 1.5로 낮춰 과부하 방지
                     renderer.setSize(window.innerWidth, window.innerHeight);
 
                     scene.add(new THREE.HemisphereLight(0xffffff, 0xbbbbff, 3));
@@ -446,15 +449,16 @@
                 },
                 onUpdate: () => {
                     updateHitTest();
-                    // 애니메이션 및 줄자 실시간 업데이트 유지
-                    if (step === 'placeImage' && lineMesh && wallFloorMesh && toeMesh) {
+
+                    // 프리징 방지: 필요한 스텝에서만 실시간 메쉬 정렬 수행
+                    if ((step === 'toe' || step === 'placeImage') && lineMesh && wallFloorMesh && toeMesh) {
                         updateDistanceLineMesh(lineMesh, wallFloorMesh.position, toeMesh.position);
                     }
+
                     updateStatusText();
                 }
             };
         }
-
         function updateHitTest() {
             const XR8 = window.XR8;
             if (!XR8 || !canvas) {
@@ -585,7 +589,7 @@
                 toeMesh = createPointMesh(0xffe600);
                 toeMesh.position.copy(confirmedPosition);
                 scene.add(toeMesh);
-                
+
                 toeMesh.updateMatrixWorld(true);
 
                 lineMesh = createDistanceLineMesh(0x00ff66);
@@ -730,13 +734,32 @@
             );
         }
 
+        // 텍스트가 바뀔 때만 DOM을 건드리도록 전면 수정 (프리징 원천 차단)
         function updateStatusText() {
             if (performance.now() < autoStatusLockedUntil) return;
+
+            let targetText = '';
+
             if (step === 'wallFloor') {
-                setResultText(hasRecentHit ? '조준 완료! [기준점 찍기]를 누르세요.' : '벽과 바닥이 만나는 지점을 정조준 하세요.');
+                targetText = hasRecentHit ? '조준 완료! [기준점 찍기]를 누르세요.' : '벽과 바닥이 만나는 지점을 정조준 하세요.';
             } else if (step === 'toe') {
-                setResultText(hasRecentHit ? '조준 완료! [발끝 찍기]를 누르세요.' : '사용자 발끝 지점을 정조준 하세요.');
+                targetText = hasRecentHit ? '조준 완료! [발끝 찍기]를 누르세요.' : '사용자 발끝 지점을 정조준 하세요.';
+            } else if (step === 'placeImage') {
+                // 3단계 진입 시 기본 가이드 유지
+                if (resultEl.innerHTML === savedDistanceText) {
+                    targetText = '원하는 벽면 위치를 조준점에 맞추고 버튼을 누르세요.';
+                } else {
+                    return; // 이미 결과 텍스트가 출력 중이면 무시
+                }
+            } else {
+                return;
             }
+
+            // [핵심] 이전 문구와 똑같다면 DOM을 수정하지 않고 리턴하여 무한 루프 차단!
+            if (lastStatusText === targetText) return;
+
+            lastStatusText = targetText;
+            resultEl.textContent = targetText;
         }
 
         function resetMeasurement() {
