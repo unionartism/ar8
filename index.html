@@ -6,13 +6,10 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no"
   />
-  <title>벽면 거리 측정 및 지정 위치 이미지 배치 AR · 8th Wall</title>
+  <title>벽면 거리 측정 및 지정 위치 이미지 배치 AR · 8th Wall Stable</title>
 
   <style>
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
     html,
     body {
@@ -30,10 +27,7 @@
       -webkit-text-size-adjust: 100%;
     }
 
-    body {
-      position: fixed;
-      inset: 0;
-    }
+    body { position: fixed; inset: 0; }
 
     #camerafeed,
     canvas {
@@ -103,18 +97,9 @@
       cursor: pointer;
     }
 
-    button.danger {
-      background: #991b1b;
-      flex: 0.4;
-    }
-
-    button:active {
-      transform: scale(0.98);
-    }
-
-    button:disabled {
-      opacity: 0.55;
-    }
+    button.danger { background: #991b1b; flex: 0.4; }
+    button:active { transform: scale(0.98); }
+    button:disabled { opacity: 0.55; }
 
     #result {
       padding: 12px;
@@ -178,9 +163,7 @@
       line-height: 1.45;
     }
 
-    #loading-cover.hidden {
-      display: none;
-    }
+    #loading-cover.hidden { display: none; }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
@@ -232,51 +215,66 @@
     let renderer = null
 
     let step = 'ready'
-    let currentHit = null
+    let rawHit = null
+    let stableHit = null
+    let hitBuffer = []
 
+    let wallFloorPoint = null
+    let toePoint = null
     let wallFloorMesh = null
     let toeMesh = null
     let lineMesh = null
     let imagePlane = null
 
-    let lineProgress = 0
-    let isAnimatingLine = false
     let savedDistanceText = ''
     let arReady = false
+    let hasCameraStream = false
+    let lastUiUpdateAt = 0
 
     const TARGET_IMAGE_WIDTH_M = 0.4
     const TARGET_IMAGE_HEIGHT_M = 0.5
     const IMAGE_URL = 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=500'
 
+    // 8th Wall hitTest는 단일 프레임의 feature-point 추정값이라 튈 수 있다.
+    // 아래 값은 UX가 너무 느려지지 않으면서 임의 feature 선택을 줄이기 위한 경험적 값이다.
+    const STABLE_SAMPLE_COUNT = 8
+    const STABLE_MAX_SPREAD_M = 0.09
+    const HIT_SAMPLE_OFFSETS = [
+      [0, 0],
+      [-0.012, 0], [0.012, 0],
+      [0, -0.012], [0, 0.012],
+    ]
+
     function setStep(nextStep) {
       step = nextStep
+      resetHitStabilizer()
 
       if (step === 'wallFloor') {
         stepTitle.textContent = '1단계: 벽/바닥선'
         stepTitle.style.color = '#00d4ff'
         crosshair.style.borderColor = '#00d4ff'
         crosshair.style.color = '#00d4ff'
-        guideText.textContent = '벽면과 바닥이 만나는 모서리 지점을 조준점에 맞추고 버튼을 누르세요.'
+        guideText.textContent = '벽면과 바닥이 만나는 모서리 지점을 조준점에 맞추고, 표시가 안정되면 버튼을 누르세요.'
         actionBtn.textContent = '벽/바닥선 확정'
         actionBtn.style.background = '#00d4ff'
         actionBtn.style.color = '#fff'
-        actionBtn.disabled = false
+        actionBtn.disabled = true
       } else if (step === 'toe') {
         stepTitle.textContent = '2단계: 사용자의 발끝'
         stepTitle.style.color = '#ffe600'
         crosshair.style.borderColor = '#ffe600'
         crosshair.style.color = '#ffe600'
-        guideText.textContent = '이제 한 걸음 물러선 대상의 발끝 지점을 조준점에 맞추고 버튼을 누르세요.'
+        guideText.textContent = '발끝 바닥점을 조준점에 맞추고, 표시가 안정되면 버튼을 누르세요. 높이값은 1단계 바닥 높이로 고정합니다.'
         actionBtn.textContent = '발끝 확정'
         actionBtn.style.background = '#ffe600'
         actionBtn.style.color = '#000'
-        actionBtn.disabled = false
+        actionBtn.disabled = true
       } else if (step === 'placeImage') {
         stepTitle.textContent = '3단계: 벽면 이미지 배치'
         stepTitle.style.color = '#ff00ff'
         crosshair.style.borderColor = '#ff00ff'
         crosshair.style.color = '#ff00ff'
-        guideText.textContent = '정면(벽면 높이)을 유저의 눈높이로 조준하고 버튼을 눌러 이미지를 부착하세요.'
+        guideText.textContent = '원하는 벽면 높이를 정면으로 바라보고 버튼을 누르세요. 이 단계에서는 hit-test를 사용하지 않습니다.'
         actionBtn.textContent = '여기에 이미지 부착'
         actionBtn.style.background = '#ff00ff'
         actionBtn.style.color = '#fff'
@@ -292,6 +290,12 @@
         actionBtn.style.color = '#fff'
         actionBtn.disabled = true
       }
+    }
+
+    function resetHitStabilizer() {
+      rawHit = null
+      stableHit = null
+      hitBuffer = []
     }
 
     function showRuntimeError(message) {
@@ -313,11 +317,9 @@
     }
 
     function makeMarker(color) {
-      const geometry = new THREE.SphereGeometry(0.02, 32, 32)
+      const geometry = new THREE.SphereGeometry(0.025, 32, 32)
       const material = new THREE.MeshStandardMaterial({ color })
-      const mesh = new THREE.Mesh(geometry, material)
-      mesh.scale.set(0, 0, 0)
-      return mesh
+      return new THREE.Mesh(geometry, material)
     }
 
     function disposeObject(object) {
@@ -330,54 +332,118 @@
       }
     }
 
-    function setCurrentHitFromCenter() {
-      if (!window.XR8 || !XR8.XrController || !arReady) {
-        currentHit = null
+    function bestSingleHitAt(x, y) {
+      if (!window.XR8 || !XR8.XrController || !arReady) return null
+
+      try {
+        const results = XR8.XrController.hitTest(x, y, ['FEATURE_POINT']) || []
+        const usable = results
+          .filter(r => r && r.position)
+          .filter(r => !Number.isFinite(r.distance) || (r.distance > 0.08 && r.distance < 7.0))
+
+        if (!usable.length) return null
+
+        // 너무 가까운 floating feature보다 조준점 근처의 대표 추정값을 사용한다.
+        // 여러 개면 distance가 있는 것 중 가장 가까운 값을 우선하되, 이후 프레임 안정화에서 한 번 더 걸러진다.
+        usable.sort((a, b) => {
+          const da = Number.isFinite(a.distance) ? a.distance : Infinity
+          const db = Number.isFinite(b.distance) ? b.distance : Infinity
+          return da - db
+        })
+
+        const first = usable[0]
+        return {
+          position: new THREE.Vector3(first.position.x, first.position.y, first.position.z),
+          distance: Number.isFinite(first.distance) ? first.distance : null,
+          type: first.type || 'UNKNOWN',
+        }
+      } catch (error) {
+        return null
+      }
+    }
+
+    function getMedian(values) {
+      const sorted = values.slice().sort((a, b) => a - b)
+      return sorted[Math.floor(sorted.length / 2)]
+    }
+
+    function sampleCenterHit() {
+      const candidates = []
+
+      for (const [dx, dy] of HIT_SAMPLE_OFFSETS) {
+        const hit = bestSingleHitAt(0.5 + dx, 0.5 + dy)
+        if (hit) candidates.push(hit)
+      }
+
+      if (!candidates.length) return null
+
+      // 주변 5개 샘플의 median을 써서 프레임 단위 튐을 줄인다.
+      const median = new THREE.Vector3(
+        getMedian(candidates.map(h => h.position.x)),
+        getMedian(candidates.map(h => h.position.y)),
+        getMedian(candidates.map(h => h.position.z))
+      )
+
+      const centerHit = candidates[0]
+      return {
+        position: median,
+        distance: centerHit.distance,
+        type: centerHit.type,
+      }
+    }
+
+    function updateStableHit() {
+      if (step !== 'wallFloor' && step !== 'toe') return
+
+      rawHit = sampleCenterHit()
+      if (!rawHit) {
+        stableHit = null
+        hitBuffer = []
+        actionBtn.disabled = true
         return
       }
 
-      try {
-        const results = XR8.XrController.hitTest(0.5, 0.5, ['FEATURE_POINT']) || []
-        const first = results.find(r => r && r.position)
+      hitBuffer.push(rawHit.position.clone())
+      if (hitBuffer.length > STABLE_SAMPLE_COUNT) hitBuffer.shift()
 
-        if (!first) {
-          currentHit = null
-          return
-        }
+      if (hitBuffer.length < STABLE_SAMPLE_COUNT) {
+        stableHit = null
+        actionBtn.disabled = true
+        return
+      }
 
-        currentHit = {
-          position: new THREE.Vector3(first.position.x, first.position.y, first.position.z),
-          distance: Number.isFinite(first.distance) ? first.distance : null,
-          raw: first,
+      const mean = new THREE.Vector3()
+      for (const p of hitBuffer) mean.add(p)
+      mean.multiplyScalar(1 / hitBuffer.length)
+
+      let maxSpread = 0
+      for (const p of hitBuffer) {
+        maxSpread = Math.max(maxSpread, p.distanceTo(mean))
+      }
+
+      if (maxSpread <= STABLE_MAX_SPREAD_M) {
+        stableHit = {
+          position: mean.clone(),
+          spread: maxSpread,
+          type: rawHit.type,
+          distance: rawHit.distance,
         }
-      } catch (error) {
-        currentHit = null
+        actionBtn.disabled = false
+      } else {
+        stableHit = null
+        actionBtn.disabled = true
       }
     }
 
     function onActionTriggered() {
-      if (!currentHit && step !== 'placeImage') {
-        resultEl.innerHTML = `
-          <span style="color:#ffcc00; font-weight:800;">
-            아직 평면을 인식하지 못했습니다.
-          </span><br>
-          <span style="font-size:0.95em;">
-            벽과 바닥이 만나는 부분을 천천히 비춰주세요.
-          </span>
-        `
-
-        actionBtn.style.opacity = '0.75'
-        setTimeout(() => {
-          actionBtn.style.opacity = '1'
-        }, 500)
-        return
-      }
-
       if (step === 'wallFloor') {
-        disposeObject(wallFloorMesh)
+        if (!stableHit) return
 
+        wallFloorPoint = stableHit.position.clone()
+
+        disposeObject(wallFloorMesh)
         wallFloorMesh = makeMarker(0x00d4ff)
-        wallFloorMesh.position.copy(currentHit.position)
+        wallFloorMesh.position.copy(wallFloorPoint)
         scene.add(wallFloorMesh)
 
         resultEl.innerHTML = '벽/바닥 기준점 등록 완료!'
@@ -386,22 +452,27 @@
       }
 
       if (step === 'toe') {
-        disposeObject(toeMesh)
-        disposeObject(lineMesh)
+        if (!stableHit || !wallFloorPoint) return
 
+        // 발끝도 바닥 위 점이어야 하므로, Y는 1단계 기준점의 바닥 높이로 강제 고정한다.
+        // 8th Wall feature-point y 튐이 거리 계산에 섞이는 것을 막기 위함이다.
+        toePoint = stableHit.position.clone()
+        toePoint.y = wallFloorPoint.y
+
+        disposeObject(toeMesh)
         toeMesh = makeMarker(0xffe600)
-        toeMesh.position.copy(currentHit.position)
+        toeMesh.position.copy(toePoint)
         scene.add(toeMesh)
 
-        const lineGeometry = new THREE.BufferGeometry()
+        disposeObject(lineMesh)
+        const lineGeometry = new THREE.BufferGeometry().setFromPoints([wallFloorPoint, toePoint])
         const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff66 })
         lineMesh = new THREE.Line(lineGeometry, lineMaterial)
         scene.add(lineMesh)
 
-        lineProgress = 0
-        isAnimatingLine = true
-
-        const distanceInMeters = wallFloorMesh.position.distanceTo(toeMesh.position)
+        const dx = toePoint.x - wallFloorPoint.x
+        const dz = toePoint.z - wallFloorPoint.z
+        const distanceInMeters = Math.sqrt(dx * dx + dz * dz)
         const distanceInCm = Math.round(distanceInMeters * 100)
         savedDistanceText = `<span style="font-size:1.2em; color:#ffe600; font-weight:bold;">★ 벽 ↔ 발끝 거리: ${distanceInCm}cm</span>`
 
@@ -463,7 +534,7 @@
     }
 
     async function placeImageLikeWebXR() {
-      if (!wallFloorMesh || !camera || !scene) {
+      if (!wallFloorPoint || !camera || !scene) {
         resultEl.innerHTML = '<span style="color:#ffcc00; font-weight:800;">벽/바닥 기준점이 없습니다. 초기화 후 다시 시도하세요.</span>'
         return
       }
@@ -474,13 +545,13 @@
       disposeObject(imagePlane)
 
       const imageGeometry = new THREE.PlaneGeometry(TARGET_IMAGE_WIDTH_M, TARGET_IMAGE_HEIGHT_M)
-      const imageMaterial = new THREE.MeshBasicMaterial({
-        map: texture,
-        side: THREE.DoubleSide,
-      })
+      const imageMaterial = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide })
       imagePlane = new THREE.Mesh(imageGeometry, imageMaterial)
 
-      imagePlane.position.copy(wallFloorMesh.position)
+      // 원본 WebXR 방식 유지:
+      // X/Z는 1단계 기준점, Y는 현재 카메라 높이.
+      // 단, mesh.position이 아니라 freeze된 wallFloorPoint clone을 사용해서 마커/라인 변경의 영향을 받지 않게 한다.
+      imagePlane.position.copy(wallFloorPoint)
       imagePlane.position.y = camera.position.y
 
       const forward = new THREE.Vector3()
@@ -492,7 +563,6 @@
       }
 
       imagePlane.lookAt(camera.position.x, imagePlane.position.y, camera.position.z)
-
       scene.add(imagePlane)
 
       resultEl.innerHTML = savedDistanceText + '<br><span style="color:#00ff66;">가상 수직 평면에 이미지 배치 완료!</span>'
@@ -505,21 +575,21 @@
       disposeObject(lineMesh)
       disposeObject(imagePlane)
 
+      wallFloorPoint = null
+      toePoint = null
       wallFloorMesh = null
       toeMesh = null
       lineMesh = null
       imagePlane = null
-      currentHit = null
-
-      isAnimatingLine = false
-      lineProgress = 0
       savedDistanceText = ''
+      resetHitStabilizer()
 
       resultEl.textContent = '주변 공간(벽과 바닥)을 천천히 비춰주세요.'
       if (arReady) setStep('wallFloor')
     }
 
     function resizeCanvasToViewport() {
+      // 8th Wall/Threejs pipeline과 충돌을 줄이기 위해 innerWidth/innerHeight 기준만 사용한다.
       const width = window.innerWidth
       const height = window.innerHeight
 
@@ -536,9 +606,7 @@
       camera = xrScene.camera
       renderer = xrScene.renderer
 
-      if (renderer) {
-        renderer.outputColorSpace = THREE.SRGBColorSpace
-      }
+      if (renderer) renderer.outputColorSpace = THREE.SRGBColorSpace
 
       const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 3)
       light.position.set(0.5, 1, 0.25)
@@ -555,34 +623,19 @@
     function updateLoop() {
       if (!arReady) return
 
-      if (wallFloorMesh && wallFloorMesh.scale.x < 1) {
-        wallFloorMesh.scale.addScalar(0.08)
-      }
-      if (toeMesh && toeMesh.scale.x < 1) {
-        toeMesh.scale.addScalar(0.08)
-      }
+      updateStableHit()
 
-      if (isAnimatingLine && wallFloorMesh && toeMesh && lineMesh) {
-        lineProgress += 0.05
-        if (lineProgress >= 1) {
-          lineProgress = 1
-          isAnimatingLine = false
-        }
-        const currentLineEnd = new THREE.Vector3().lerpVectors(
-          wallFloorMesh.position,
-          toeMesh.position,
-          lineProgress
-        )
-        lineMesh.geometry.setFromPoints([wallFloorMesh.position, currentLineEnd])
-      }
+      const now = performance.now()
+      if (now - lastUiUpdateAt < 120) return
+      lastUiUpdateAt = now
 
-      setCurrentHitFromCenter()
-
-      if (step !== 'done' && step !== 'placeImage') {
-        if (currentHit) {
-          resultEl.textContent = '공간 인식 성공! 확정 버튼을 누르세요.'
+      if (step === 'wallFloor' || step === 'toe') {
+        if (stableHit) {
+          resultEl.innerHTML = `공간 인식 안정됨! 확정 버튼을 누르세요.<br><span style="font-size:0.9em; opacity:0.8;">안정도 ±${Math.round(stableHit.spread * 100)}cm · ${stableHit.type}</span>`
+        } else if (rawHit) {
+          resultEl.textContent = '공간 인식 중... 조준점을 잠시 고정하세요.'
         } else {
-          resultEl.textContent = '평면을 탐색 중입니다...'
+          resultEl.textContent = '평면/특징점을 탐색 중입니다...'
         }
       } else if (step === 'placeImage') {
         resultEl.innerHTML = savedDistanceText + '<br><span style="color:#ff00ff;">원하는 벽면 높이(정면)를 바라보고 버튼을 누르세요!</span>'
@@ -591,13 +644,15 @@
 
     function wallArtPipelineModule() {
       return {
-        name: 'wall-art-webxr-style',
+        name: 'wall-art-webxr-style-stable',
         onStart: initThreeScene,
         onUpdate: updateLoop,
         onCameraStatusChange: ({status}) => {
           if (status === 'requesting') {
             loadingCover.classList.remove('hidden')
             loadingCover.innerHTML = '카메라 권한을 요청 중입니다.'
+          } else if (status === 'hasStream') {
+            hasCameraStream = true
           } else if (status === 'failed') {
             showRuntimeError('카메라를 열 수 없습니다. HTTPS 환경인지, 브라우저 카메라 권한이 허용되어 있는지 확인하세요.')
           }
