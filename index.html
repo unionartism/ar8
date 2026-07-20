@@ -28,30 +28,26 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    html {
+    html,
+    body {
       width: 100%;
       height: 100%;
       margin: 0;
       padding: 0;
+
       overflow: hidden;
+      overscroll-behavior: none;
+
       background: #000;
     }
 
     body {
-      position: fixed !important;
-      inset: 0 !important;
+      position: fixed;
+      inset: 0;
 
-      width: 100vw !important;
-      height: var(--app-height) !important;
+      height: var(--app-height);
 
-      margin: 0 !important;
-      padding: 0 !important;
-
-      overflow: hidden !important;
-      overscroll-behavior: none;
       touch-action: none;
-
-      background: #000;
 
       font-family:
         system-ui,
@@ -62,23 +58,15 @@
     }
 
     /*
-     * XR8 카메라 canvas
-     *
-     * 반드시 UI보다 아래에 위치시킵니다.
+     * 카메라 canvas의 실제 위치와 크기는 JavaScript에서
+     * 카메라 영상 비율에 맞춰 설정합니다.
      */
     #camerafeed {
       position: fixed !important;
-      inset: 0 !important;
 
       z-index: 0 !important;
 
       display: block !important;
-
-      width: 100vw !important;
-      height: var(--app-height) !important;
-
-      max-width: none !important;
-      max-height: none !important;
 
       margin: 0 !important;
       padding: 0 !important;
@@ -86,15 +74,11 @@
 
       background: #000 !important;
 
-      object-fit: cover !important;
       pointer-events: none !important;
     }
 
     /*
-     * 모든 HTML UI를 담는 최상위 레이어입니다.
-     *
-     * XR8이나 외부 스크립트가 canvas 위치 또는
-     * z-index를 변경해도 화면 위에 남도록 합니다.
+     * HTML 인터페이스 최상위 레이어
      */
     #arUiRoot {
       position: fixed !important;
@@ -114,11 +98,10 @@
       pointer-events: none !important;
 
       isolation: isolate;
-      transform: translateZ(0);
     }
 
     #status {
-      position: absolute !important;
+      position: absolute;
 
       top: max(
         14px,
@@ -136,30 +119,38 @@
 
       overflow: hidden;
 
-      border: 1px solid rgb(255 255 255 / 18%);
+      border:
+        1px solid
+        rgb(255 255 255 / 18%);
+
       border-radius: 999px;
 
-      background: rgb(0 0 0 / 72%);
+      background:
+        rgb(0 0 0 / 72%);
+
       color: #fff;
 
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 650;
       line-height: 1.4;
 
       text-align: center;
       text-overflow: ellipsis;
       white-space: nowrap;
 
-      box-shadow: 0 5px 20px rgb(0 0 0 / 25%);
-      backdrop-filter: blur(10px);
+      box-shadow:
+        0 5px 20px
+        rgb(0 0 0 / 25%);
 
-      transform: translateX(-50%);
+      transform:
+        translateX(-50%);
 
-      pointer-events: none;
+      backdrop-filter:
+        blur(10px);
     }
 
     #reticle {
-      position: absolute !important;
+      position: absolute;
 
       top: 50%;
       left: 50%;
@@ -169,23 +160,29 @@
       width: 48px;
       height: 48px;
 
-      border: 2px solid rgb(255 255 255 / 90%);
+      border:
+        2px solid
+        rgb(255 255 255 / 90%);
+
       border-radius: 50%;
 
       color: #fff;
 
       box-shadow:
-        0 0 0 1px rgb(0 0 0 / 50%),
-        0 0 18px rgb(255 255 255 / 18%);
+        0 0 0 1px
+        rgb(0 0 0 / 50%),
+        0 0 18px
+        rgb(255 255 255 / 18%);
 
-      transform: translate(-50%, -50%);
+      transform:
+        translate(-50%, -50%);
 
       transition:
-        width 160ms ease,
-        height 160ms ease,
-        color 160ms ease,
-        border-color 160ms ease,
-        box-shadow 160ms ease;
+        width 160ms,
+        height 160ms,
+        color 160ms,
+        border-color 160ms,
+        box-shadow 160ms;
 
       pointer-events: none;
     }
@@ -197,11 +194,13 @@
       top: 50%;
       left: 50%;
 
-      background: currentColor;
+      background:
+        currentColor;
 
       content: "";
 
-      transform: translate(-50%, -50%);
+      transform:
+        translate(-50%, -50%);
     }
 
     #reticle::before {
@@ -214,6 +213,11 @@
       height: 18px;
     }
 
+    #reticle.searching {
+      border-color: #ffd166;
+      color: #ffd166;
+    }
+
     #reticle.ready {
       width: 58px;
       height: 58px;
@@ -222,59 +226,66 @@
       color: #58f59a;
 
       box-shadow:
-        0 0 0 1px rgb(0 0 0 / 50%),
-        0 0 28px rgb(88 245 154 / 55%);
+        0 0 0 1px
+        rgb(0 0 0 / 50%),
+        0 0 28px
+        rgb(88 245 154 / 55%);
     }
 
     #controls {
-      position: absolute !important;
+      position: absolute;
 
-      right: 12px;
+      right: 10px;
+
       bottom: max(
-        18px,
+        14px,
         env(safe-area-inset-bottom)
       );
-      left: 12px;
+
+      left: 10px;
 
       z-index: 30;
 
-      display: flex !important;
+      display: flex;
+
+      flex-wrap: wrap;
 
       align-items: center;
       justify-content: center;
 
-      gap: 8px;
+      gap: 7px;
 
-      pointer-events: auto !important;
+      pointer-events: auto;
     }
 
     button,
     .file-button {
-      position: relative;
+      display: inline-flex;
 
-      display: inline-flex !important;
-
-      min-height: 48px;
+      min-height: 44px;
 
       align-items: center;
       justify-content: center;
 
-      padding: 0 16px;
+      padding: 0 13px;
 
       border: 0;
       border-radius: 999px;
 
-      background: rgb(255 255 255 / 96%);
+      background:
+        rgb(255 255 255 / 96%);
+
       color: #111;
 
       font: inherit;
-      font-size: 14px;
-      font-weight: 750;
+      font-size: 13px;
+      font-weight: 760;
 
       white-space: nowrap;
 
       box-shadow:
-        0 5px 20px rgb(0 0 0 / 32%);
+        0 5px 20px
+        rgb(0 0 0 / 32%);
 
       cursor: pointer;
       user-select: none;
@@ -312,27 +323,32 @@
     }
 
     #debug {
-      position: absolute !important;
+      position: absolute;
 
-      right: 10px;
+      right: 9px;
 
       bottom: calc(
         max(
-          18px,
+          14px,
           env(safe-area-inset-bottom)
-        ) + 68px
+        ) + 104px
       );
 
       z-index: 25;
 
-      max-width: 195px;
+      max-width: 210px;
 
       padding: 8px 10px;
 
-      border: 1px solid rgb(255 255 255 / 14%);
+      border:
+        1px solid
+        rgb(255 255 255 / 14%);
+
       border-radius: 9px;
 
-      background: rgb(0 0 0 / 68%);
+      background:
+        rgb(0 0 0 / 68%);
+
       color: #fff;
 
       font:
@@ -344,15 +360,19 @@
 
       white-space: pre-wrap;
 
-      box-shadow: 0 5px 18px rgb(0 0 0 / 24%);
-      backdrop-filter: blur(8px);
+      box-shadow:
+        0 5px 18px
+        rgb(0 0 0 / 24%);
+
+      backdrop-filter:
+        blur(8px);
 
       pointer-events: none;
     }
 
     #errorPanel {
-      position: absolute !important;
-      inset: 0 !important;
+      position: absolute;
+      inset: 0;
 
       z-index: 100;
 
@@ -363,16 +383,18 @@
 
       padding: 24px;
 
-      background: rgb(0 0 0 / 94%);
+      background:
+        rgb(0 0 0 / 94%);
+
       color: #fff;
 
       text-align: center;
 
-      pointer-events: auto !important;
+      pointer-events: auto;
     }
 
     #errorPanel.visible {
-      display: flex !important;
+      display: flex;
     }
 
     #errorPanelContent {
@@ -382,15 +404,14 @@
 
     #errorTitle {
       margin: 0 0 12px;
-
       font-size: 22px;
-      line-height: 1.35;
     }
 
     #errorMessage {
       margin: 0 0 22px;
 
-      color: rgb(255 255 255 / 78%);
+      color:
+        rgb(255 255 255 / 78%);
 
       font-size: 15px;
       line-height: 1.65;
@@ -398,20 +419,16 @@
       white-space: pre-line;
     }
 
-    #reloadButton {
-      min-width: 150px;
-    }
-
-    @media (max-width: 420px) {
+    @media (max-width: 380px) {
       button,
       .file-button {
-        min-height: 46px;
-        padding: 0 12px;
-        font-size: 13px;
+        min-height: 42px;
+        padding: 0 10px;
+        font-size: 12px;
       }
 
       #debug {
-        max-width: 165px;
+        max-width: 170px;
         font-size: 9px;
       }
     }
@@ -427,10 +444,8 @@
 </head>
 
 <body>
-  <!-- XR8 카메라 출력 -->
   <canvas id="camerafeed"></canvas>
 
-  <!-- HTML 인터페이스 -->
   <div id="arUiRoot">
     <div id="status">
       애플리케이션을 준비하는 중입니다.
@@ -438,10 +453,8 @@
 
     <div id="reticle"></div>
 
-    <div id="debug">
-      UI: READY
-      XR8: WAIT
-    </div>
+    <div id="debug">UI: READY
+XR8: WAIT</div>
 
     <div id="controls">
       <label
@@ -465,6 +478,20 @@
         disabled
       >
         벽에 배치
+      </button>
+
+      <button
+        id="recenterButton"
+        type="button"
+      >
+        재인식
+      </button>
+
+      <button
+        id="fitButton"
+        type="button"
+      >
+        화면 채우기
       </button>
 
       <button
@@ -497,7 +524,7 @@
     import * as THREE from 'three'
 
     /*
-     * XR8의 Three.js 파이프라인이 참조할 수 있도록
+     * XR8 Three.js 파이프라인이 참조할 수 있도록
      * Three.js를 전역에 등록합니다.
      */
     window.THREE = THREE
@@ -513,108 +540,247 @@
       new THREE.Vector2(0, 0)
 
     /*
-     * 화면 중앙 주변 표면 검사 지점
+     * 벽면 검출 조절값
      */
-    const WALL_SAMPLE_POINTS = {
-      center: [0.50, 0.50],
+    const DETECTION = {
+      sampleIntervalMs:
+        220,
 
-      left: [0.44, 0.50],
-      right: [0.56, 0.50],
+      historyDurationMs:
+        1800,
 
-      upper: [0.50, 0.44],
-      lower: [0.50, 0.56],
+      maxHistoryPoints:
+        280,
 
-      upperLeft: [0.44, 0.44],
-      upperRight: [0.56, 0.44],
+      ransacIterations:
+        120,
 
-      lowerLeft: [0.44, 0.56],
-      lowerRight: [0.56, 0.56],
+      minimumPoints:
+        12,
+
+      minimumInliers:
+        10,
+
+      /*
+       * 벽 normal의 Y 성분 허용값.
+       * 값이 낮을수록 더 수직인 평면만 허용합니다.
+       */
+      maximumNormalY:
+        0.48,
+
+      minimumExtentMeters:
+        0.12,
+
+      readyStableFrames:
+        2,
+    }
+
+    /*
+     * 화면 중앙 주변 5×5 hit-test
+     */
+    const SAMPLE_OFFSETS = [
+      -0.16,
+      -0.08,
+      0,
+      0.08,
+      0.16,
+    ]
+
+    const WALL_SAMPLE_POINTS = []
+
+    for (
+      const yOffset
+      of SAMPLE_OFFSETS
+    ) {
+      for (
+        const xOffset
+        of SAMPLE_OFFSETS
+      ) {
+        WALL_SAMPLE_POINTS.push([
+          0.5 + xOffset,
+          0.5 + yOffset,
+        ])
+      }
     }
 
     const state = {
       scene: null,
       camera: null,
       renderer: null,
+      XR8: null,
 
       artwork: null,
       artworkTexture: null,
 
+      wallSamples: [],
+
       wallCandidate: null,
+      rawWallCandidate: null,
+
+      wallStableFrames: 0,
       wallCandidateLastSeen: 0,
+      wallSearchReason: '초기화',
 
-      trackingStatus: 'INITIALIZING',
-      trackingReason: null,
+      trackingStatus:
+        'INITIALIZING',
 
-      sampleTimer: 0,
-      debugTimer: 0,
+      trackingReason:
+        null,
 
-      xrStarted: false,
-      xrLoading: false,
+      cameraStatus:
+        'IDLE',
 
-      cameraStatus: 'IDLE',
+      sampleTimer:
+        0,
+
+      debugTimer:
+        0,
+
+      layoutTimer:
+        0,
+
+      xrStarted:
+        false,
+
+      xrLoading:
+        false,
+
+      videoWidth:
+        0,
+
+      videoHeight:
+        0,
+
+      orientation:
+        0,
+
+      /*
+       * contain:
+       * 카메라 원본 화각 보존.
+       *
+       * cover:
+       * 화면을 채우지만 일부 잘릴 수 있음.
+       */
+      cameraFit:
+        'contain',
+
+      resizeLock:
+        false,
     }
 
     const canvas =
-      document.querySelector('#camerafeed')
+      document.querySelector(
+        '#camerafeed',
+      )
 
     const uiRoot =
-      document.querySelector('#arUiRoot')
+      document.querySelector(
+        '#arUiRoot',
+      )
 
     const statusElement =
-      document.querySelector('#status')
+      document.querySelector(
+        '#status',
+      )
 
     const reticleElement =
-      document.querySelector('#reticle')
+      document.querySelector(
+        '#reticle',
+      )
 
     const debugElement =
-      document.querySelector('#debug')
+      document.querySelector(
+        '#debug',
+      )
+
+    const controls =
+      document.querySelector(
+        '#controls',
+      )
 
     const imageInput =
-      document.querySelector('#imageInput')
+      document.querySelector(
+        '#imageInput',
+      )
 
     const fileButton =
-      document.querySelector('#fileButton')
+      document.querySelector(
+        '#fileButton',
+      )
 
     const placeButton =
-      document.querySelector('#placeButton')
+      document.querySelector(
+        '#placeButton',
+      )
+
+    const recenterButton =
+      document.querySelector(
+        '#recenterButton',
+      )
+
+    const fitButton =
+      document.querySelector(
+        '#fitButton',
+      )
 
     const resetButton =
-      document.querySelector('#resetButton')
+      document.querySelector(
+        '#resetButton',
+      )
 
     const errorPanel =
-      document.querySelector('#errorPanel')
+      document.querySelector(
+        '#errorPanel',
+      )
 
     const errorMessage =
-      document.querySelector('#errorMessage')
+      document.querySelector(
+        '#errorMessage',
+      )
 
     const reloadButton =
-      document.querySelector('#reloadButton')
+      document.querySelector(
+        '#reloadButton',
+      )
 
     /*
      * -------------------------------------------------------
-     * 레이어 순서 강제
+     * Viewport 및 카메라 표시 크기
      * -------------------------------------------------------
      */
 
+    function getViewportSize() {
+      return {
+        width: Math.max(
+          1,
+          Math.round(
+            window.visualViewport
+              ?.width ??
+            window.innerWidth,
+          ),
+        ),
+
+        height: Math.max(
+          1,
+          Math.round(
+            window.visualViewport
+              ?.height ??
+            window.innerHeight,
+          ),
+        ),
+      }
+    }
+
     function enforceLayerOrder() {
-      /*
-       * 카메라 canvas는 가장 아래에 둡니다.
-       */
-      canvas.style.setProperty(
-        'position',
-        'fixed',
-        'important',
-      )
-
-      canvas.style.setProperty(
-        'inset',
-        '0',
-        'important',
-      )
-
       canvas.style.setProperty(
         'z-index',
         '0',
+        'important',
+      )
+
+      canvas.style.setProperty(
+        'position',
+        'fixed',
         'important',
       )
 
@@ -637,29 +803,8 @@
       )
 
       canvas.style.setProperty(
-        'width',
-        '100vw',
-        'important',
-      )
-
-      canvas.style.setProperty(
-        'height',
-        'var(--app-height)',
-        'important',
-      )
-
-      /*
-       * UI는 항상 canvas보다 위에 둡니다.
-       */
-      uiRoot.style.setProperty(
-        'position',
-        'fixed',
-        'important',
-      )
-
-      uiRoot.style.setProperty(
-        'inset',
-        '0',
+        'pointer-events',
+        'none',
         'important',
       )
 
@@ -687,97 +832,304 @@
         'important',
       )
 
-      uiRoot.style.setProperty(
-        'pointer-events',
-        'none',
-        'important',
-      )
-
-      /*
-       * 외부 코드가 다른 DOM 요소를 body 마지막에 넣었더라도
-       * UI를 다시 마지막 자식으로 이동시킵니다.
-       */
       if (
-        uiRoot.parentElement !== document.body ||
-        document.body.lastElementChild !== uiRoot
+        document.body.lastElementChild
+        !== uiRoot
       ) {
-        document.body.appendChild(uiRoot)
+        document.body.appendChild(
+          uiRoot,
+        )
       }
     }
 
-    enforceLayerOrder()
+    function updateViewportVariable() {
+      const {
+        height,
+      } = getViewportSize()
 
-    /*
-     * XR8이 실행 중 DOM 구조를 수정하는 경우에도
-     * UI 레이어를 다시 최상단으로 복구합니다.
-     */
-    const bodyObserver =
-      new MutationObserver(() => {
-        window.requestAnimationFrame(
-          enforceLayerOrder,
+      document.documentElement
+        .style
+        .setProperty(
+          '--app-height',
+          `${height}px`,
         )
-      })
-
-    bodyObserver.observe(
-      document.body,
-      {
-        childList: true,
-      },
-    )
-
-    /*
-     * -------------------------------------------------------
-     * 모바일 viewport
-     * -------------------------------------------------------
-     */
-
-    function updateViewportSize() {
-      const viewportHeight =
-        window.visualViewport?.height ??
-        window.innerHeight
-
-      document.documentElement.style.setProperty(
-        '--app-height',
-        `${Math.round(viewportHeight)}px`,
-      )
-
-      enforceLayerOrder()
     }
 
-    updateViewportSize()
+    /*
+     * 기기마다 videoWidth/videoHeight의 방향이
+     * 다를 수 있으므로 viewport 비율과 가장 가까운
+     * 방향을 선택합니다.
+     */
+    function chooseCameraAspect(
+      viewportAspect,
+    ) {
+      if (
+        !state.videoWidth ||
+        !state.videoHeight
+      ) {
+        return viewportAspect
+      }
 
-    window.addEventListener(
-      'resize',
-      updateViewportSize,
-      {passive: true},
-    )
+      const rawAspect =
+        state.videoWidth /
+        state.videoHeight
 
-    window.addEventListener(
-      'orientationchange',
-      () => {
-        window.setTimeout(
-          updateViewportSize,
-          100,
+      const swappedAspect =
+        state.videoHeight /
+        state.videoWidth
+
+      const rawDifference =
+        Math.abs(
+          Math.log(
+            rawAspect /
+            viewportAspect,
+          ),
         )
 
-        window.setTimeout(
-          updateViewportSize,
-          400,
+      const swappedDifference =
+        Math.abs(
+          Math.log(
+            swappedAspect /
+            viewportAspect,
+          ),
         )
 
-        window.setTimeout(
-          updateViewportSize,
-          800,
-        )
-      },
-      {passive: true},
-    )
+      return (
+        rawDifference <=
+        swappedDifference
+      )
+        ? rawAspect
+        : swappedAspect
+    }
 
-    window.visualViewport?.addEventListener(
-      'resize',
-      updateViewportSize,
-      {passive: true},
-    )
+    function applyCameraLayout() {
+      updateViewportVariable()
+      enforceLayerOrder()
+
+      const {
+        width: viewportWidth,
+        height: viewportHeight,
+      } = getViewportSize()
+
+      const viewportAspect =
+        viewportWidth /
+        viewportHeight
+
+      const cameraAspect =
+        chooseCameraAspect(
+          viewportAspect,
+        )
+
+      let cssWidth
+      let cssHeight
+
+      /*
+       * contain은 영상 전체를 보존합니다.
+       * 화면과 카메라 비율이 다르면 검은 여백이 생깁니다.
+       */
+      if (
+        state.cameraFit ===
+        'contain'
+      ) {
+        if (
+          viewportAspect >
+          cameraAspect
+        ) {
+          cssHeight =
+            viewportHeight
+
+          cssWidth =
+            cssHeight *
+            cameraAspect
+        } else {
+          cssWidth =
+            viewportWidth
+
+          cssHeight =
+            cssWidth /
+            cameraAspect
+        }
+      } else if (
+        viewportAspect >
+        cameraAspect
+      ) {
+        /*
+         * cover
+         */
+        cssWidth =
+          viewportWidth
+
+        cssHeight =
+          cssWidth /
+          cameraAspect
+      } else {
+        cssHeight =
+          viewportHeight
+
+        cssWidth =
+          cssHeight *
+          cameraAspect
+      }
+
+      cssWidth = Math.max(
+        1,
+        Math.round(cssWidth),
+      )
+
+      cssHeight = Math.max(
+        1,
+        Math.round(cssHeight),
+      )
+
+      const left =
+        Math.round(
+          (
+            viewportWidth -
+            cssWidth
+          ) / 2,
+        )
+
+      const top =
+        Math.round(
+          (
+            viewportHeight -
+            cssHeight
+          ) / 2,
+        )
+
+      canvas.style.setProperty(
+        'left',
+        `${left}px`,
+        'important',
+      )
+
+      canvas.style.setProperty(
+        'top',
+        `${top}px`,
+        'important',
+      )
+
+      canvas.style.setProperty(
+        'width',
+        `${cssWidth}px`,
+        'important',
+      )
+
+      canvas.style.setProperty(
+        'height',
+        `${cssHeight}px`,
+        'important',
+      )
+
+      if (
+        !state.renderer ||
+        !state.XR8 ||
+        state.resizeLock
+      ) {
+        return
+      }
+
+      /*
+       * CSS 크기뿐 아니라 실제 WebGL canvas 크기도
+       * 같은 비율로 조정합니다.
+       */
+      const dpr =
+        Math.min(
+          window.devicePixelRatio ||
+          1,
+
+          1.5,
+        )
+
+      const targetWidth =
+        Math.max(
+          1,
+          Math.round(
+            cssWidth *
+            dpr,
+          ),
+        )
+
+      const targetHeight =
+        Math.max(
+          1,
+          Math.round(
+            cssHeight *
+            dpr,
+          ),
+        )
+
+      if (
+        Math.abs(
+          canvas.width -
+          targetWidth,
+        ) <= 2 &&
+        Math.abs(
+          canvas.height -
+          targetHeight,
+        ) <= 2
+      ) {
+        return
+      }
+
+      state.resizeLock = true
+
+      try {
+        state.renderer.setPixelRatio(
+          dpr,
+        )
+
+        state.renderer.setSize(
+          cssWidth,
+          cssHeight,
+          false,
+        )
+
+        /*
+         * 변경된 canvas 크기를 XR8 카메라 투영에 전달합니다.
+         */
+        state.XR8
+          .XrController
+          .updateCameraProjectionMatrix({
+            cam: {
+              pixelRectWidth:
+                canvas.width,
+
+              pixelRectHeight:
+                canvas.height,
+
+              nearClipPlane:
+                0.01,
+
+              farClipPlane:
+                1000,
+            },
+          })
+      } catch (error) {
+        console.warn(
+          'Camera layout warning:',
+          error,
+        )
+      } finally {
+        requestAnimationFrame(() => {
+          state.resizeLock = false
+        })
+      }
+    }
+
+    function scheduleCameraLayout(
+      delay = 0,
+    ) {
+      window.clearTimeout(
+        state.layoutTimer,
+      )
+
+      state.layoutTimer =
+        window.setTimeout(
+          applyCameraLayout,
+          delay,
+        )
+    }
 
     /*
      * -------------------------------------------------------
@@ -786,11 +1138,13 @@
      */
 
     function setStatus(message) {
-      statusElement.textContent = message
+      statusElement.textContent =
+        message
     }
 
     function showError(message) {
-      errorMessage.textContent = message
+      errorMessage.textContent =
+        message
 
       errorPanel.classList.add(
         'visible',
@@ -805,8 +1159,11 @@
       )
     }
 
-    function enableImageInput(enabled) {
-      imageInput.disabled = !enabled
+    function enableImageInput(
+      enabled,
+    ) {
+      imageInput.disabled =
+        !enabled
 
       fileButton.classList.toggle(
         'disabled',
@@ -814,34 +1171,86 @@
       )
     }
 
-    function setReticleReady(ready) {
-      reticleElement.classList.toggle(
-        'ready',
-        ready,
-      )
+    function updateReticle() {
+      const ready =
+        Boolean(
+          state.wallCandidate
+            ?.ready,
+        )
+
+      const searching =
+        !ready &&
+        state.trackingStatus ===
+          'NORMAL'
+
+      reticleElement
+        .classList
+        .toggle(
+          'ready',
+          ready,
+        )
+
+      reticleElement
+        .classList
+        .toggle(
+          'searching',
+          searching,
+        )
 
       placeButton.disabled =
         !ready ||
-        !state.artwork ||
-        state.trackingStatus !== 'NORMAL'
+        !state.artwork
     }
 
-    function updateDebug(extra = {}) {
+    function updateDebug(
+      extra = {},
+    ) {
       const lines = [
         'UI: READY',
-        `XR8: ${window.XR8 ? 'READY' : 'WAIT'}`,
-        `camera: ${state.cameraStatus}`,
-        `tracking: ${state.trackingStatus}`,
-        `reason: ${state.trackingReason || '-'}`,
+
+        `XR8: ${
+          window.XR8
+            ? 'READY'
+            : 'WAIT'
+        }`,
+
+        `camera: ${
+          state.cameraStatus
+        }`,
+
+        `fit: ${
+          state.cameraFit
+        }`,
+
+        `video: ${
+          state.videoWidth || '-'
+        }x${
+          state.videoHeight || '-'
+        }`,
+
+        `canvas: ${
+          canvas.width
+        }x${
+          canvas.height
+        }`,
+
+        `tracking: ${
+          state.trackingStatus
+        }`,
+
         `wall: ${
           state.wallCandidate
+            ?.ready
             ? 'READY'
             : 'SEARCHING'
         }`,
-        `artwork: ${
-          state.artwork
-            ? 'YES'
-            : 'NO'
+
+        `reason: ${
+          state.wallSearchReason
+        }`,
+
+        `samples: ${
+          state.wallSamples.length
         }`,
       ]
 
@@ -872,28 +1281,29 @@
             return
           }
 
-          const timeoutMilliseconds =
-            30000
-
           let completed = false
           let pollingId = null
 
           const timeoutId =
-            window.setTimeout(() => {
-              finishWithError(
-                new Error(
-                  'XR8 초기화 시간이 초과되었습니다.\n' +
-                  '네트워크 연결과 CDN 접근 상태를 확인해 주세요.',
-                ),
-              )
-            }, timeoutMilliseconds)
+            window.setTimeout(
+              () => {
+                finishError(
+                  new Error(
+                    'XR8 초기화 시간이 초과되었습니다.',
+                  ),
+                )
+              },
+              30000,
+            )
 
           function cleanup() {
             window.clearTimeout(
               timeoutId,
             )
 
-            if (pollingId !== null) {
+            if (
+              pollingId !== null
+            ) {
               window.clearInterval(
                 pollingId,
               )
@@ -901,11 +1311,11 @@
 
             window.removeEventListener(
               'xrloaded',
-              handleXRLoaded,
+              finishSuccess,
             )
           }
 
-          function finishWithXR8() {
+          function finishSuccess() {
             if (
               completed ||
               !window.XR8
@@ -914,37 +1324,34 @@
             }
 
             completed = true
+
             cleanup()
 
             resolve(window.XR8)
           }
 
-          function finishWithError(error) {
+          function finishError(
+            error,
+          ) {
             if (completed) {
               return
             }
 
             completed = true
+
             cleanup()
 
             reject(error)
           }
 
-          function handleXRLoaded() {
-            finishWithXR8()
-          }
-
-          /*
-           * 스크립트를 넣기 전에 이벤트부터 등록합니다.
-           */
           window.addEventListener(
             'xrloaded',
-            handleXRLoaded,
+            finishSuccess,
           )
 
           pollingId =
             window.setInterval(
-              finishWithXR8,
+              finishSuccess,
               100,
             )
 
@@ -954,7 +1361,7 @@
             )
 
           if (existingScript) {
-            finishWithXR8()
+            finishSuccess()
             return
           }
 
@@ -966,11 +1373,14 @@
           script.src =
             XR8_ENGINE_URL
 
-          script.async = true
+          script.async =
+            true
+
           script.crossOrigin =
             'anonymous'
 
-          script.dataset.xr8Engine =
+          script.dataset
+            .xr8Engine =
             'true'
 
           script.setAttribute(
@@ -980,119 +1390,147 @@
 
           script.addEventListener(
             'load',
-            finishWithXR8,
-            {once: true},
+            finishSuccess,
+            {
+              once: true,
+            },
           )
 
           script.addEventListener(
             'error',
             () => {
-              finishWithError(
+              finishError(
                 new Error(
                   '8th Wall XR 엔진 파일을 불러오지 못했습니다.',
                 ),
               )
             },
-            {once: true},
+            {
+              once: true,
+            },
           )
 
-          document.head.appendChild(
-            script,
-          )
+          document.head
+            .appendChild(
+              script,
+            )
         },
       )
     }
 
     /*
      * -------------------------------------------------------
-     * Three.js 이미지
+     * 이미지 처리
      * -------------------------------------------------------
      */
 
-    function disposeMaterial(material) {
+    function disposeMaterial(
+      material,
+    ) {
       if (!material) {
         return
       }
 
-      if (Array.isArray(material)) {
-        for (const item of material) {
+      if (
+        Array.isArray(material)
+      ) {
+        for (
+          const item
+          of material
+        ) {
           item.dispose()
         }
-
-        return
+      } else {
+        material.dispose()
       }
-
-      material.dispose()
     }
 
     function disposeArtwork() {
       if (state.artwork) {
-        state.artwork.removeFromParent()
-        state.artwork.geometry?.dispose()
+        state.artwork
+          .removeFromParent()
+
+        state.artwork
+          .geometry
+          ?.dispose()
 
         disposeMaterial(
-          state.artwork.material,
+          state.artwork
+            .material,
         )
 
         state.artwork = null
       }
 
-      if (state.artworkTexture) {
-        state.artworkTexture.dispose()
+      if (
+        state.artworkTexture
+      ) {
+        state.artworkTexture
+          .dispose()
 
-        state.artworkTexture = null
+        state.artworkTexture =
+          null
       }
 
-      placeButton.disabled = true
+      updateReticle()
     }
 
-    async function createResizedCanvas(file) {
+    async function createResizedCanvas(
+      file,
+    ) {
       const bitmap =
-        await createImageBitmap(file)
+        await createImageBitmap(
+          file,
+        )
 
       try {
-        const maxTextureSize = 2048
+        const maxTextureSize =
+          2048
 
-        const resizeRatio = Math.min(
-          1,
-          maxTextureSize /
+        const ratio =
+          Math.min(
+            1,
+
+            maxTextureSize /
             Math.max(
               bitmap.width,
               bitmap.height,
             ),
-        )
+          )
 
-        const outputWidth =
+        const width =
           Math.max(
             1,
+
             Math.round(
               bitmap.width *
-              resizeRatio,
+              ratio,
             ),
           )
 
-        const outputHeight =
+        const height =
           Math.max(
             1,
+
             Math.round(
               bitmap.height *
-              resizeRatio,
+              ratio,
             ),
           )
 
-        const imageCanvas =
+        const output =
           document.createElement(
             'canvas',
           )
 
-        imageCanvas.width =
-          outputWidth
+        output.width =
+          width
 
-        imageCanvas.height =
-          outputHeight
+        output.height =
+          height
 
         const context =
-          imageCanvas.getContext(
+          output.getContext(
             '2d',
             {
               alpha: true,
@@ -1109,17 +1547,19 @@
           bitmap,
           0,
           0,
-          outputWidth,
-          outputHeight,
+          width,
+          height,
         )
 
-        return imageCanvas
+        return output
       } finally {
         bitmap.close()
       }
     }
 
-    async function loadArtwork(file) {
+    async function loadArtwork(
+      file,
+    ) {
       if (!state.scene) {
         throw new Error(
           'AR 공간이 아직 준비되지 않았습니다.',
@@ -1155,12 +1595,14 @@
       texture.colorSpace =
         THREE.SRGBColorSpace
 
-      texture.needsUpdate = true
+      texture.needsUpdate =
+        true
 
       if (state.renderer) {
         texture.anisotropy =
           Math.min(
             8,
+
             state.renderer
               .capabilities
               .getMaxAnisotropy(),
@@ -1168,9 +1610,10 @@
       }
 
       /*
-       * 기본 실제 가로 크기 60cm
+       * 이미지 기본 실제 가로 크기 60cm
        */
-      const widthMeters = 0.6
+      const widthMeters =
+        0.6
 
       const heightMeters =
         widthMeters *
@@ -1185,17 +1628,23 @@
 
       const material =
         new THREE.MeshBasicMaterial({
-          map: texture,
+          map:
+            texture,
 
-          transparent: true,
+          transparent:
+            true,
 
           side:
             THREE.DoubleSide,
 
-          toneMapped: false,
+          toneMapped:
+            false,
 
-          depthTest: true,
-          depthWrite: true,
+          depthTest:
+            true,
+
+          depthWrite:
+            true,
         })
 
       const artwork =
@@ -1207,8 +1656,11 @@
       artwork.name =
         'wall-artwork'
 
-      artwork.visible = false
-      artwork.renderOrder = 10
+      artwork.visible =
+        false
+
+      artwork.renderOrder =
+        10
 
       state.scene.add(
         artwork,
@@ -1220,114 +1672,391 @@
       state.artworkTexture =
         texture
 
-      setReticleReady(
-        Boolean(
-          state.wallCandidate,
-        ),
+      updateReticle()
+
+      setStatus(
+        state.wallCandidate
+          ?.ready
+          ? '벽이 감지되었습니다. 배치 버튼을 누르세요.'
+          : '벽을 향해 천천히 좌우로 움직여 주세요.',
+      )
+    }
+
+    /*
+     * -------------------------------------------------------
+     * 특징점 수집
+     * -------------------------------------------------------
+     */
+
+    function isFiniteVector(
+      position,
+    ) {
+      return (
+        position &&
+        Number.isFinite(
+          position.x,
+        ) &&
+        Number.isFinite(
+          position.y,
+        ) &&
+        Number.isFinite(
+          position.z,
+        )
+      )
+    }
+
+    function typeWeight(type) {
+      if (
+        type ===
+        'DETECTED_SURFACE'
+      ) {
+        return 3
+      }
+
+      if (
+        type ===
+        'ESTIMATED_SURFACE'
+      ) {
+        return 2
+      }
+
+      if (
+        type ===
+        'FEATURE_POINT'
+      ) {
+        return 1.25
+      }
+
+      return 0
+    }
+
+    function pickBestHit(hits) {
+      if (
+        !Array.isArray(hits)
+      ) {
+        return null
+      }
+
+      const valid =
+        hits.filter(hit => {
+          const weight =
+            typeWeight(
+              hit.type,
+            )
+
+          const validDistance =
+            !Number.isFinite(
+              hit.distance,
+            ) ||
+            (
+              hit.distance >=
+                0.2 &&
+              hit.distance <=
+                8
+            )
+
+          return (
+            weight > 0 &&
+            isFiniteVector(
+              hit.position,
+            ) &&
+            validDistance
+          )
+        })
+
+      valid.sort(
+        (a, b) =>
+          typeWeight(b.type) -
+          typeWeight(a.type),
       )
 
-      if (state.wallCandidate) {
-        setStatus(
-          '벽이 감지되었습니다. 배치 버튼을 누르세요.',
+      return valid[0] || null
+    }
+
+    function addWallSample(
+      position,
+      source,
+      weight,
+      timestamp,
+    ) {
+      if (
+        !isFiniteVector(
+          position,
         )
-      } else {
-        setStatus(
-          '벽을 향해 휴대폰을 천천히 움직이세요.',
+      ) {
+        return
+      }
+
+      state.wallSamples.push({
+        position:
+          new THREE.Vector3(
+            position.x,
+            position.y,
+            position.z,
+          ),
+
+        source,
+        weight,
+        timestamp,
+      })
+    }
+
+    function collectHitTestSamples(
+      XR8,
+      timestamp,
+    ) {
+      for (
+        const [x, y]
+        of WALL_SAMPLE_POINTS
+      ) {
+        try {
+          const results =
+            XR8.XrController
+              .hitTest(
+                x,
+                y,
+              ) || []
+
+          const hit =
+            pickBestHit(
+              results,
+            )
+
+          if (hit) {
+            addWallSample(
+              hit.position,
+              hit.type,
+              typeWeight(
+                hit.type,
+              ),
+              timestamp,
+            )
+          }
+        } catch (error) {
+          console.warn(
+            'hitTest warning:',
+            error,
+          )
+        }
+      }
+    }
+
+    /*
+     * 화면 중앙 주변에 실제로 투영되는 worldPoints도
+     * 벽 후보에 추가합니다.
+     */
+    function collectVisibleWorldPoints(
+      worldPoints,
+      timestamp,
+    ) {
+      if (
+        !state.camera ||
+        !Array.isArray(
+          worldPoints,
+        ) ||
+        !worldPoints.length
+      ) {
+        return
+      }
+
+      state.camera
+        .updateMatrixWorld(
+          true,
+        )
+
+      const cameraPosition =
+        new THREE.Vector3()
+
+      state.camera
+        .getWorldPosition(
+          cameraPosition,
+        )
+
+      const candidates = []
+
+      for (
+        const point
+        of worldPoints
+      ) {
+        if (
+          !isFiniteVector(
+            point.position,
+          )
+        ) {
+          continue
+        }
+
+        const world =
+          new THREE.Vector3(
+            point.position.x,
+            point.position.y,
+            point.position.z,
+          )
+
+        const distance =
+          cameraPosition
+            .distanceTo(
+              world,
+            )
+
+        if (
+          distance < 0.2 ||
+          distance > 8
+        ) {
+          continue
+        }
+
+        const ndc =
+          world
+            .clone()
+            .project(
+              state.camera,
+            )
+
+        if (
+          ndc.z < -1 ||
+          ndc.z > 1
+        ) {
+          continue
+        }
+
+        /*
+         * 화면 중앙 약 84% 영역만 사용
+         */
+        if (
+          Math.abs(ndc.x) >
+            0.42 ||
+          Math.abs(ndc.y) >
+            0.42
+        ) {
+          continue
+        }
+
+        candidates.push({
+          point,
+
+          score:
+            Number.isFinite(
+              point.confidence,
+            )
+              ? point.confidence
+              : 0.5,
+        })
+      }
+
+      candidates.sort(
+        (a, b) =>
+          b.score -
+          a.score,
+      )
+
+      for (
+        const candidate
+        of candidates.slice(
+          0,
+          45,
+        )
+      ) {
+        addWallSample(
+          candidate.point
+            .position,
+
+          'WORLD_POINT',
+
+          THREE.MathUtils.clamp(
+            candidate.score,
+            0.35,
+            1,
+          ),
+
+          timestamp,
         )
       }
     }
 
     /*
+     * 일정 시간이 지난 점을 제거하고
+     * 2.5cm 단위로 중복 제거
+     */
+    function pruneAndDeduplicateSamples(
+      timestamp,
+    ) {
+      const cutoff =
+        timestamp -
+        DETECTION
+          .historyDurationMs
+
+      state.wallSamples =
+        state.wallSamples
+          .filter(
+            sample =>
+              sample.timestamp >=
+              cutoff,
+          )
+
+      const map =
+        new Map()
+
+      const cellSize =
+        0.025
+
+      for (
+        const sample
+        of state.wallSamples
+      ) {
+        const key = [
+          Math.round(
+            sample.position.x /
+            cellSize,
+          ),
+
+          Math.round(
+            sample.position.y /
+            cellSize,
+          ),
+
+          Math.round(
+            sample.position.z /
+            cellSize,
+          ),
+        ].join(':')
+
+        const current =
+          map.get(key)
+
+        if (
+          !current ||
+          sample.weight >
+            current.weight ||
+          sample.timestamp >
+            current.timestamp
+        ) {
+          map.set(
+            key,
+            sample,
+          )
+        }
+      }
+
+      state.wallSamples =
+        [...map.values()]
+          .sort(
+            (a, b) =>
+              b.timestamp -
+              a.timestamp,
+          )
+          .slice(
+            0,
+            DETECTION
+              .maxHistoryPoints,
+          )
+    }
+
+    /*
      * -------------------------------------------------------
-     * 벽면 추정
+     * 수학 유틸리티
      * -------------------------------------------------------
      */
-
-    function pickBestSurfaceHit(hits) {
-      if (!Array.isArray(hits)) {
-        return null
-      }
-
-      return (
-        hits.find(
-          hit =>
-            hit.type ===
-            'DETECTED_SURFACE',
-        ) ||
-        hits.find(
-          hit =>
-            hit.type ===
-            'ESTIMATED_SURFACE',
-        ) ||
-        null
-      )
-    }
-
-    function hitPositionToVector(hit) {
-      return new THREE.Vector3(
-        hit.position.x,
-        hit.position.y,
-        hit.position.z,
-      )
-    }
-
-    function averagePositions(
-      hitMap,
-      names,
-    ) {
-      const result =
-        new THREE.Vector3()
-
-      let count = 0
-
-      for (const name of names) {
-        const hit =
-          hitMap[name]
-
-        if (!hit) {
-          continue
-        }
-
-        result.x +=
-          hit.position.x
-
-        result.y +=
-          hit.position.y
-
-        result.z +=
-          hit.position.z
-
-        count += 1
-      }
-
-      if (count === 0) {
-        return null
-      }
-
-      return result.multiplyScalar(
-        1 / count,
-      )
-    }
-
-    function calculateCentroid(hits) {
-      const centroid =
-        new THREE.Vector3()
-
-      for (const hit of hits) {
-        centroid.x +=
-          hit.position.x
-
-        centroid.y +=
-          hit.position.y
-
-        centroid.z +=
-          hit.position.z
-      }
-
-      return centroid.multiplyScalar(
-        1 / hits.length,
-      )
-    }
 
     function median(values) {
       if (!values.length) {
@@ -1336,7 +2065,8 @@
 
       const sorted =
         [...values].sort(
-          (a, b) => a - b,
+          (a, b) =>
+            a - b,
         )
 
       const middle =
@@ -1344,16 +2074,345 @@
           sorted.length / 2,
         )
 
-      if (
-        sorted.length % 2 === 1
-      ) {
-        return sorted[middle]
+      return (
+        sorted.length % 2
+      )
+        ? sorted[middle]
+        : (
+            sorted[middle - 1] +
+            sorted[middle]
+          ) / 2
+    }
+
+    function randomDistinctIndices(
+      length,
+    ) {
+      const a =
+        Math.floor(
+          Math.random() *
+          length,
+        )
+
+      let b =
+        Math.floor(
+          Math.random() *
+          length,
+        )
+
+      let c =
+        Math.floor(
+          Math.random() *
+          length,
+        )
+
+      while (b === a) {
+        b =
+          Math.floor(
+            Math.random() *
+            length,
+          )
       }
 
-      return (
-        sorted[middle - 1] +
-        sorted[middle]
-      ) / 2
+      while (
+        c === a ||
+        c === b
+      ) {
+        c =
+          Math.floor(
+            Math.random() *
+            length,
+          )
+      }
+
+      return [a, b, c]
+    }
+
+    /*
+     * 대칭 3×3 행렬의 가장 작은 고유값에 대응하는
+     * 고유벡터를 Jacobi 회전으로 계산합니다.
+     */
+    function smallestEigenvectorSymmetric3(
+      matrix,
+    ) {
+      const a =
+        matrix.map(
+          row => [...row],
+        )
+
+      const v = [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+      ]
+
+      for (
+        let iteration = 0;
+        iteration < 24;
+        iteration += 1
+      ) {
+        let p = 0
+        let q = 1
+
+        let maximum =
+          Math.abs(
+            a[0][1],
+          )
+
+        for (
+          const [i, j]
+          of [
+            [0, 2],
+            [1, 2],
+          ]
+        ) {
+          const value =
+            Math.abs(
+              a[i][j],
+            )
+
+          if (
+            value > maximum
+          ) {
+            maximum = value
+            p = i
+            q = j
+          }
+        }
+
+        if (
+          maximum < 1e-10
+        ) {
+          break
+        }
+
+        const angle =
+          0.5 *
+          Math.atan2(
+            2 * a[p][q],
+            a[q][q] -
+            a[p][p],
+          )
+
+        const cosine =
+          Math.cos(angle)
+
+        const sine =
+          Math.sin(angle)
+
+        const app =
+          a[p][p]
+
+        const aqq =
+          a[q][q]
+
+        const apq =
+          a[p][q]
+
+        a[p][p] =
+          cosine *
+          cosine *
+          app -
+          2 *
+          sine *
+          cosine *
+          apq +
+          sine *
+          sine *
+          aqq
+
+        a[q][q] =
+          sine *
+          sine *
+          app +
+          2 *
+          sine *
+          cosine *
+          apq +
+          cosine *
+          cosine *
+          aqq
+
+        a[p][q] = 0
+        a[q][p] = 0
+
+        for (
+          let k = 0;
+          k < 3;
+          k += 1
+        ) {
+          if (
+            k === p ||
+            k === q
+          ) {
+            continue
+          }
+
+          const akp =
+            a[k][p]
+
+          const akq =
+            a[k][q]
+
+          a[k][p] =
+            cosine *
+            akp -
+            sine *
+            akq
+
+          a[p][k] =
+            a[k][p]
+
+          a[k][q] =
+            sine *
+            akp +
+            cosine *
+            akq
+
+          a[q][k] =
+            a[k][q]
+        }
+
+        for (
+          let k = 0;
+          k < 3;
+          k += 1
+        ) {
+          const vkp =
+            v[k][p]
+
+          const vkq =
+            v[k][q]
+
+          v[k][p] =
+            cosine *
+            vkp -
+            sine *
+            vkq
+
+          v[k][q] =
+            sine *
+            vkp +
+            cosine *
+            vkq
+        }
+      }
+
+      const eigenvalues = [
+        a[0][0],
+        a[1][1],
+        a[2][2],
+      ]
+
+      const index =
+        eigenvalues.indexOf(
+          Math.min(
+            ...eigenvalues,
+          ),
+        )
+
+      return new THREE.Vector3(
+        v[0][index],
+        v[1][index],
+        v[2][index],
+      ).normalize()
+    }
+
+    /*
+     * RANSAC에서 선택한 inlier를 PCA로 재정제
+     */
+    function refinePlane(
+      inliers,
+    ) {
+      const centroid =
+        new THREE.Vector3()
+
+      let totalWeight = 0
+
+      for (
+        const sample
+        of inliers
+      ) {
+        centroid
+          .addScaledVector(
+            sample.position,
+            sample.weight,
+          )
+
+        totalWeight +=
+          sample.weight
+      }
+
+      centroid.multiplyScalar(
+        1 /
+        Math.max(
+          totalWeight,
+          1e-6,
+        ),
+      )
+
+      let xx = 0
+      let xy = 0
+      let xz = 0
+      let yy = 0
+      let yz = 0
+      let zz = 0
+
+      for (
+        const sample
+        of inliers
+      ) {
+        const delta =
+          sample.position
+            .clone()
+            .sub(
+              centroid,
+            )
+
+        const weight =
+          sample.weight
+
+        xx +=
+          weight *
+          delta.x *
+          delta.x
+
+        xy +=
+          weight *
+          delta.x *
+          delta.y
+
+        xz +=
+          weight *
+          delta.x *
+          delta.z
+
+        yy +=
+          weight *
+          delta.y *
+          delta.y
+
+        yz +=
+          weight *
+          delta.y *
+          delta.z
+
+        zz +=
+          weight *
+          delta.z *
+          delta.z
+      }
+
+      const normal =
+        smallestEigenvectorSymmetric3([
+          [xx, xy, xz],
+          [xy, yy, yz],
+          [xz, yz, zz],
+        ])
+
+      return {
+        centroid,
+        normal,
+      }
     }
 
     function createWallQuaternion(
@@ -1373,7 +2432,7 @@
 
       if (
         right.lengthSq() <
-        0.000001
+        1e-8
       ) {
         return null
       }
@@ -1402,216 +2461,421 @@
         )
     }
 
-    function estimateWallCandidate(XR8) {
-      if (!state.camera) {
-        return null
-      }
+    /*
+     * -------------------------------------------------------
+     * RANSAC 수직 평면 추정
+     * -------------------------------------------------------
+     */
 
-      const hitMap = {}
-      const validHits = []
-
-      for (
-        const [name, coordinates]
-        of Object.entries(
-          WALL_SAMPLE_POINTS,
-        )
+    function estimateWallPlane(
+      samples,
+    ) {
+      if (
+        !state.camera ||
+        samples.length <
+          DETECTION.minimumPoints
       ) {
-        const [x, y] =
-          coordinates
+        return {
+          candidate: null,
 
-        let results = []
-
-        try {
-          results =
-            XR8.XrController.hitTest(
-              x,
-              y,
-            ) || []
-        } catch (error) {
-          console.warn(
-            'hitTest failed:',
-            error,
-          )
-
-          continue
+          reason:
+            `점 부족 ${
+              samples.length
+            }/${
+              DETECTION
+                .minimumPoints
+            }`,
         }
-
-        const hit =
-          pickBestSurfaceHit(
-            results,
-          )
-
-        if (!hit) {
-          continue
-        }
-
-        hitMap[name] = hit
-        validHits.push(hit)
       }
 
-      if (validHits.length < 5) {
-        return null
-      }
-
-      const leftCenter =
-        averagePositions(
-          hitMap,
-          [
-            'left',
-            'upperLeft',
-            'lowerLeft',
-          ],
+      state.camera
+        .updateMatrixWorld(
+          true,
         )
-
-      const rightCenter =
-        averagePositions(
-          hitMap,
-          [
-            'right',
-            'upperRight',
-            'lowerRight',
-          ],
-        )
-
-      const upperCenter =
-        averagePositions(
-          hitMap,
-          [
-            'upper',
-            'upperLeft',
-            'upperRight',
-          ],
-        )
-
-      const lowerCenter =
-        averagePositions(
-          hitMap,
-          [
-            'lower',
-            'lowerLeft',
-            'lowerRight',
-          ],
-        )
-
-      if (
-        !leftCenter ||
-        !rightCenter ||
-        !upperCenter ||
-        !lowerCenter
-      ) {
-        return null
-      }
-
-      const horizontal =
-        rightCenter
-          .clone()
-          .sub(leftCenter)
-
-      const vertical =
-        upperCenter
-          .clone()
-          .sub(lowerCenter)
-
-      if (
-        horizontal.lengthSq() <
-          0.0001 ||
-        vertical.lengthSq() <
-          0.0001
-      ) {
-        return null
-      }
-
-      horizontal.normalize()
-      vertical.normalize()
-
-      const normal =
-        new THREE.Vector3()
-          .crossVectors(
-            horizontal,
-            vertical,
-          )
-
-      if (
-        normal.lengthSq() <
-        0.000001
-      ) {
-        return null
-      }
-
-      normal.normalize()
-
-      const centroid =
-        calculateCentroid(
-          validHits,
-        )
-
-      state.camera.updateMatrixWorld(
-        true,
-      )
 
       const cameraPosition =
         new THREE.Vector3()
 
-      state.camera.getWorldPosition(
-        cameraPosition,
-      )
+      state.camera
+        .getWorldPosition(
+          cameraPosition,
+        )
 
-      const wallToCamera =
-        cameraPosition
-          .clone()
-          .sub(centroid)
+      const distances =
+        samples.map(
+          sample =>
+            cameraPosition
+              .distanceTo(
+                sample.position,
+              ),
+        )
 
       /*
-       * normal을 카메라 방향으로 정렬
+       * 거리가 멀수록 평면 오차 허용값을 조금 증가
+       */
+      const threshold =
+        THREE.MathUtils.clamp(
+          0.022 +
+          median(distances) *
+          0.014,
+
+          0.03,
+          0.075,
+        )
+
+      let best = null
+
+      for (
+        let iteration = 0;
+        iteration <
+          DETECTION
+            .ransacIterations;
+        iteration += 1
+      ) {
+        const [
+          ia,
+          ib,
+          ic,
+        ] =
+          randomDistinctIndices(
+            samples.length,
+          )
+
+        const a =
+          samples[ia]
+            .position
+
+        const b =
+          samples[ib]
+            .position
+
+        const c =
+          samples[ic]
+            .position
+
+        const abX =
+          b.x - a.x
+
+        const abY =
+          b.y - a.y
+
+        const abZ =
+          b.z - a.z
+
+        const acX =
+          c.x - a.x
+
+        const acY =
+          c.y - a.y
+
+        const acZ =
+          c.z - a.z
+
+        const normal =
+          new THREE.Vector3(
+            abY * acZ -
+              abZ * acY,
+
+            abZ * acX -
+              abX * acZ,
+
+            abX * acY -
+              abY * acX,
+          )
+
+        if (
+          normal.lengthSq() <
+          1e-7
+        ) {
+          continue
+        }
+
+        normal.normalize()
+
+        /*
+         * 수직 벽만 후보로 허용
+         */
+        if (
+          Math.abs(
+            normal.dot(
+              WORLD_UP,
+            ),
+          ) >
+          DETECTION
+            .maximumNormalY
+        ) {
+          continue
+        }
+
+        const inliers = []
+
+        let score = 0
+        let squaredError = 0
+
+        for (
+          const sample
+          of samples
+        ) {
+          const dx =
+            sample.position.x -
+            a.x
+
+          const dy =
+            sample.position.y -
+            a.y
+
+          const dz =
+            sample.position.z -
+            a.z
+
+          const distance =
+            Math.abs(
+              normal.x * dx +
+              normal.y * dy +
+              normal.z * dz,
+            )
+
+          if (
+            distance <=
+            threshold
+          ) {
+            inliers.push(
+              sample,
+            )
+
+            score +=
+              sample.weight
+
+            squaredError +=
+              distance *
+              distance
+          }
+        }
+
+        if (
+          inliers.length <
+          DETECTION
+            .minimumInliers
+        ) {
+          continue
+        }
+
+        const rms =
+          Math.sqrt(
+            squaredError /
+            inliers.length,
+          )
+
+        const quality =
+          score -
+          rms * 50
+
+        if (
+          !best ||
+          quality >
+          best.quality
+        ) {
+          best = {
+            inliers,
+            quality,
+          }
+        }
+      }
+
+      if (!best) {
+        return {
+          candidate: null,
+          reason:
+            '수직 평면 후보 없음',
+        }
+      }
+
+      const refined =
+        refinePlane(
+          best.inliers,
+        )
+
+      let normal =
+        refined.normal
+
+      const centroid =
+        refined.centroid
+
+      if (
+        Math.abs(
+          normal.dot(
+            WORLD_UP,
+          ),
+        ) >
+        DETECTION
+          .maximumNormalY
+      ) {
+        return {
+          candidate: null,
+          reason:
+            '바닥/천장 후보',
+        }
+      }
+
+      /*
+       * normal을 카메라 쪽으로 정렬
        */
       if (
         normal.dot(
-          wallToCamera,
+          cameraPosition
+            .clone()
+            .sub(
+              centroid,
+            ),
         ) < 0
       ) {
         normal.negate()
       }
 
-      /*
-       * 바닥과 천장 제외
-       */
-      const normalY =
-        Math.abs(
-          normal.dot(
-            WORLD_UP,
-          ),
-        )
+      const finalInliers = []
 
-      if (normalY > 0.35) {
-        return null
-      }
+      let squaredError = 0
 
-      let squaredErrorSum = 0
+      for (
+        const sample
+        of samples
+      ) {
+        const dx =
+          sample.position.x -
+          centroid.x
 
-      for (const hit of validHits) {
-        const point =
-          hitPositionToVector(
-            hit,
+        const dy =
+          sample.position.y -
+          centroid.y
+
+        const dz =
+          sample.position.z -
+          centroid.z
+
+        const distance =
+          Math.abs(
+            normal.x * dx +
+            normal.y * dy +
+            normal.z * dz,
           )
 
-        const planeDistance =
-          point
-            .sub(centroid)
-            .dot(normal)
+        if (
+          distance <=
+          threshold
+        ) {
+          finalInliers.push(
+            sample,
+          )
 
-        squaredErrorSum +=
-          planeDistance *
-          planeDistance
+          squaredError +=
+            distance *
+            distance
+        }
       }
 
-      const rmsError =
-        Math.sqrt(
-          squaredErrorSum /
-          validHits.length,
-        )
+      if (
+        finalInliers.length <
+        DETECTION
+          .minimumInliers
+      ) {
+        return {
+          candidate: null,
+          reason:
+            '평면 일치점 부족',
+        }
+      }
 
-      if (rmsError > 0.06) {
-        return null
+      const right =
+        new THREE.Vector3()
+          .crossVectors(
+            WORLD_UP,
+            normal,
+          )
+          .normalize()
+
+      const wallUp =
+        new THREE.Vector3()
+          .crossVectors(
+            normal,
+            right,
+          )
+          .normalize()
+
+      let minX = Infinity
+      let maxX = -Infinity
+      let minY = Infinity
+      let maxY = -Infinity
+
+      for (
+        const sample
+        of finalInliers
+      ) {
+        const delta =
+          sample.position
+            .clone()
+            .sub(
+              centroid,
+            )
+
+        const x =
+          delta.dot(
+            right,
+          )
+
+        const y =
+          delta.dot(
+            wallUp,
+          )
+
+        minX =
+          Math.min(
+            minX,
+            x,
+          )
+
+        maxX =
+          Math.max(
+            maxX,
+            x,
+          )
+
+        minY =
+          Math.min(
+            minY,
+            y,
+          )
+
+        maxY =
+          Math.max(
+            maxY,
+            y,
+          )
+      }
+
+      const extentWidth =
+        maxX - minX
+
+      const extentHeight =
+        maxY - minY
+
+      if (
+        extentWidth <
+          DETECTION
+            .minimumExtentMeters ||
+        extentHeight <
+          DETECTION
+            .minimumExtentMeters
+      ) {
+        return {
+          candidate: null,
+
+          reason:
+            `범위 부족 ${
+              extentWidth.toFixed(2)
+            }×${
+              extentHeight.toFixed(2)
+            }m`,
+        }
       }
 
       const wallPlane =
@@ -1629,58 +2893,35 @@
         state.camera,
       )
 
-      const placementPosition =
-        raycaster.ray.intersectPlane(
-          wallPlane,
-          new THREE.Vector3(),
-        )
+      const position =
+        raycaster.ray
+          .intersectPlane(
+            wallPlane,
+            new THREE.Vector3(),
+          )
 
-      if (!placementPosition) {
-        return null
+      if (!position) {
+        return {
+          candidate: null,
+          reason:
+            '중앙선 교차 실패',
+        }
       }
 
-      const calculatedDistance =
-        cameraPosition.distanceTo(
-          placementPosition,
-        )
+      const distance =
+        cameraPosition
+          .distanceTo(
+            position,
+          )
 
       if (
-        calculatedDistance < 0.25 ||
-        calculatedDistance > 8
+        distance < 0.25 ||
+        distance > 8
       ) {
-        return null
-      }
-
-      const reportedDistances =
-        validHits
-          .map(
-            hit => hit.distance,
-          )
-          .filter(
-            Number.isFinite,
-          )
-
-      const reportedDistance =
-        median(
-          reportedDistances,
-        )
-
-      if (reportedDistance > 0) {
-        const allowedDifference =
-          Math.max(
-            0.35,
-            reportedDistance *
-              0.25,
-          )
-
-        if (
-          Math.abs(
-            calculatedDistance -
-            reportedDistance,
-          ) >
-          allowedDifference
-        ) {
-          return null
+        return {
+          candidate: null,
+          reason:
+            '거리 범위 밖',
         }
       }
 
@@ -1690,74 +2931,171 @@
         )
 
       if (!quaternion) {
-        return null
+        return {
+          candidate: null,
+          reason:
+            '벽 회전 계산 실패',
+        }
       }
 
+      const rmsError =
+        Math.sqrt(
+          squaredError /
+          finalInliers.length,
+        )
+
+      const inlierRatio =
+        finalInliers.length /
+        samples.length
+
+      const extentScore =
+        THREE.MathUtils.clamp(
+          (
+            extentWidth +
+            extentHeight
+          ) / 1.2,
+
+          0,
+          1,
+        )
+
+      const residualScore =
+        1 -
+        THREE.MathUtils
+          .smoothstep(
+            rmsError,
+            0.015,
+            0.07,
+          )
+
+      const confidence =
+        THREE.MathUtils.clamp(
+          inlierRatio *
+            0.35 +
+          residualScore *
+            0.35 +
+          extentScore *
+            0.3,
+
+          0,
+          1,
+        )
+
       return {
-        position:
-          placementPosition,
+        candidate: {
+          position,
+          normal,
+          quaternion,
 
-        normal,
-        quaternion,
+          distance,
+          rmsError,
 
-        distance:
-          calculatedDistance,
+          inlierCount:
+            finalInliers.length,
 
-        reportedDistance,
-        rmsError,
+          totalCount:
+            samples.length,
 
-        hitCount:
-          validHits.length,
+          extentWidth,
+          extentHeight,
+
+          confidence,
+
+          ready:
+            false,
+        },
+
+        reason:
+          '후보 계산됨',
       }
     }
 
     /*
      * -------------------------------------------------------
-     * 벽 후보 smoothing
+     * 시간 안정화
      * -------------------------------------------------------
      */
 
-    function sampleWallCandidate(XR8) {
-      if (
-        state.trackingStatus !==
-        'NORMAL'
-      ) {
-        state.wallCandidate = null
-
-        setReticleReady(false)
-
-        setStatus(
-          '공간 추적을 복구하는 중입니다.',
-        )
-
-        return
-      }
-
+    function updateWallCandidate(
+      result,
+      timestamp,
+    ) {
       const candidate =
-        estimateWallCandidate(
-          XR8,
-        )
+        result.candidate
+
+      state.wallSearchReason =
+        result.reason
 
       if (!candidate) {
-        const elapsed =
-          performance.now() -
-          state.wallCandidateLastSeen
+        if (
+          timestamp -
+          state.wallCandidateLastSeen >
+          900
+        ) {
+          state.wallCandidate =
+            null
 
-        if (elapsed > 500) {
-          state.wallCandidate = null
+          state.rawWallCandidate =
+            null
 
-          setReticleReady(false)
-
-          setStatus(
-            '벽을 향해 천천히 움직여 주세요.',
-          )
+          state.wallStableFrames =
+            0
         }
+
+        updateReticle()
 
         return
       }
 
       state.wallCandidateLastSeen =
-        performance.now()
+        timestamp
+
+      if (
+        state.rawWallCandidate
+      ) {
+        const normalDot =
+          THREE.MathUtils.clamp(
+            state.rawWallCandidate
+              .normal
+              .dot(
+                candidate.normal,
+              ),
+
+            -1,
+            1,
+          )
+
+        const angleDegrees =
+          THREE.MathUtils.radToDeg(
+            Math.acos(
+              normalDot,
+            ),
+          )
+
+        const positionDelta =
+          state.rawWallCandidate
+            .position
+            .distanceTo(
+              candidate.position,
+            )
+
+        if (
+          angleDegrees < 12 &&
+          positionDelta < 0.22
+        ) {
+          state.wallStableFrames +=
+            1
+        } else {
+          state.wallStableFrames =
+            1
+        }
+      } else {
+        state.wallStableFrames =
+          1
+      }
+
+      state.rawWallCandidate =
+        candidate
 
       if (!state.wallCandidate) {
         state.wallCandidate =
@@ -1767,14 +3105,14 @@
           .position
           .lerp(
             candidate.position,
-            0.35,
+            0.28,
           )
 
         state.wallCandidate
           .normal
           .lerp(
             candidate.normal,
-            0.25,
+            0.22,
           )
           .normalize()
 
@@ -1789,34 +3127,143 @@
             .quaternion
             .slerp(
               quaternion,
-              0.35,
+              0.3,
             )
         }
 
-        state.wallCandidate.distance =
-          candidate.distance
+        Object.assign(
+          state.wallCandidate,
+          {
+            distance:
+              candidate.distance,
 
-        state.wallCandidate.rmsError =
-          candidate.rmsError
+            rmsError:
+              candidate.rmsError,
 
-        state.wallCandidate.hitCount =
-          candidate.hitCount
+            inlierCount:
+              candidate.inlierCount,
+
+            totalCount:
+              candidate.totalCount,
+
+            extentWidth:
+              candidate.extentWidth,
+
+            extentHeight:
+              candidate.extentHeight,
+
+            confidence:
+              candidate.confidence,
+          },
+        )
       }
 
-      setReticleReady(true)
-
-      setStatus(
-        `벽 감지됨 · 약 ${
+      state.wallCandidate.ready =
+        (
+          state.wallStableFrames >=
+          DETECTION
+            .readyStableFrames
+        ) &&
+        (
           state.wallCandidate
-            .distance
-            .toFixed(2)
-        }m`,
+            .confidence >=
+          0.38
+        )
+
+      state.wallSearchReason =
+        state.wallCandidate.ready
+          ? '벽 고정 가능'
+          : `안정화 ${
+              state.wallStableFrames
+            }/${
+              DETECTION
+                .readyStableFrames
+            }`
+
+      updateReticle()
+    }
+
+    function scanWall(
+      XR8,
+      worldPoints,
+      timestamp,
+    ) {
+      if (
+        state.trackingStatus !==
+        'NORMAL'
+      ) {
+        state.wallSearchReason =
+          '추적 복구 중'
+
+        state.wallCandidate =
+          null
+
+        state.wallStableFrames =
+          0
+
+        updateReticle()
+
+        setStatus(
+          '공간 추적을 복구하는 중입니다.',
+        )
+
+        return
+      }
+
+      collectHitTestSamples(
+        XR8,
+        timestamp,
       )
+
+      collectVisibleWorldPoints(
+        worldPoints,
+        timestamp,
+      )
+
+      pruneAndDeduplicateSamples(
+        timestamp,
+      )
+
+      const result =
+        estimateWallPlane(
+          state.wallSamples,
+        )
+
+      updateWallCandidate(
+        result,
+        timestamp,
+      )
+
+      if (
+        state.wallCandidate
+          ?.ready
+      ) {
+        setStatus(
+          `벽 감지됨 · 약 ${
+            state.wallCandidate
+              .distance
+              .toFixed(2)
+          }m`,
+        )
+      } else if (
+        state.wallSamples.length <
+        DETECTION.minimumPoints
+      ) {
+        setStatus(
+          '벽의 무늬나 모서리를 비추며 천천히 좌우로 움직여 주세요.',
+        )
+      } else {
+        setStatus(
+          `벽을 분석하는 중입니다 · ${
+            state.wallSearchReason
+          }`,
+        )
+      }
     }
 
     /*
      * -------------------------------------------------------
-     * 이미지 배치
+     * 이미지 배치 및 초기화
      * -------------------------------------------------------
      */
 
@@ -1824,10 +3271,9 @@
       const candidate =
         state.wallCandidate
 
-      const artwork =
-        state.artwork
-
-      if (!candidate) {
+      if (
+        !candidate?.ready
+      ) {
         setStatus(
           '먼저 안정적인 벽을 인식해 주세요.',
         )
@@ -1835,7 +3281,7 @@
         return
       }
 
-      if (!artwork) {
+      if (!state.artwork) {
         setStatus(
           '먼저 배치할 이미지를 선택해 주세요.',
         )
@@ -1843,24 +3289,30 @@
         return
       }
 
-      artwork.position.copy(
-        candidate.position,
-      )
+      state.artwork
+        .position
+        .copy(
+          candidate.position,
+        )
 
       /*
-       * z-fighting 방지:
-       * 벽 normal 방향으로 6mm 이동
+       * z-fighting 방지를 위해 벽에서 6mm 띄움
        */
-      artwork.position.addScaledVector(
-        candidate.normal,
-        0.006,
-      )
+      state.artwork
+        .position
+        .addScaledVector(
+          candidate.normal,
+          0.006,
+        )
 
-      artwork.quaternion.copy(
-        candidate.quaternion,
-      )
+      state.artwork
+        .quaternion
+        .copy(
+          candidate.quaternion,
+        )
 
-      artwork.visible = true
+      state.artwork.visible =
+        true
 
       setStatus(
         `이미지를 약 ${
@@ -1870,21 +3322,60 @@
       )
     }
 
+    function clearWallDetection() {
+      state.wallSamples = []
+
+      state.wallCandidate =
+        null
+
+      state.rawWallCandidate =
+        null
+
+      state.wallStableFrames =
+        0
+
+      state.wallCandidateLastSeen =
+        0
+
+      state.wallSearchReason =
+        '재인식 대기'
+
+      updateReticle()
+    }
+
+    function recenterTracking() {
+      clearWallDetection()
+
+      try {
+        state.XR8
+          ?.XrController
+          ?.recenter()
+
+        setStatus(
+          '추적을 초기화했습니다. 특징이 있는 벽을 천천히 비춰 주세요.',
+        )
+      } catch (error) {
+        console.warn(
+          'recenter warning:',
+          error,
+        )
+
+        setStatus(
+          '벽 후보를 초기화했습니다. 다시 스캔해 주세요.',
+        )
+      }
+    }
+
     function resetPlacement() {
       if (state.artwork) {
         state.artwork.visible =
           false
       }
 
-      state.wallCandidate = null
-
-      state.wallCandidateLastSeen =
-        0
-
-      setReticleReady(false)
+      clearWallDetection()
 
       setStatus(
-        '벽을 향해 휴대폰을 천천히 움직여 주세요.',
+        '벽을 향해 천천히 좌우로 움직여 주세요.',
       )
     }
 
@@ -1901,39 +3392,47 @@
         name:
           'wall-art-single-html',
 
-        /*
-         * 카메라 권한 상태 확인
-         */
         onCameraStatusChange({
           status,
         }) {
           state.cameraStatus =
-            status || 'UNKNOWN'
+            status ||
+            'UNKNOWN'
 
-          enforceLayerOrder()
-
-          if (status === 'requesting') {
+          if (
+            status ===
+            'requesting'
+          ) {
             setStatus(
               '카메라 권한을 요청하는 중입니다.',
             )
           }
 
-          if (status === 'hasStream') {
+          if (
+            status ===
+            'hasStream'
+          ) {
             setStatus(
               '카메라를 시작하는 중입니다.',
             )
           }
 
-          if (status === 'hasVideo') {
+          if (
+            status ===
+            'hasVideo'
+          ) {
             setStatus(
               '공간 인식을 시작합니다.',
             )
           }
 
-          if (status === 'failed') {
+          if (
+            status ===
+            'failed'
+          ) {
             showError(
               '카메라를 시작하지 못했습니다.\n' +
-              '브라우저의 카메라 권한을 확인해 주세요.',
+              '브라우저 카메라 권한을 확인해 주세요.',
             )
           }
         },
@@ -1946,40 +3445,91 @@
           } =
             XR8.Threejs.xrScene()
 
-          state.scene = scene
-          state.camera = camera
-          state.renderer = renderer
+          state.scene =
+            scene
 
-          enforceLayerOrder()
-          updateViewportSize()
+          state.camera =
+            camera
 
-          enableImageInput(true)
+          state.renderer =
+            renderer
 
-          setStatus(
-            '주변을 천천히 움직여 공간을 인식하세요.',
+          enableImageInput(
+            true,
           )
 
-          updateDebug()
+          scheduleCameraLayout(
+            0,
+          )
+
+          setStatus(
+            '벽의 무늬나 모서리를 비추며 천천히 좌우로 움직여 주세요.',
+          )
         },
 
-        onAttach() {
-          enforceLayerOrder()
+        onAttach({
+          videoWidth,
+          videoHeight,
+          orientation,
+        }) {
+          state.videoWidth =
+            videoWidth ||
+            state.videoWidth
+
+          state.videoHeight =
+            videoHeight ||
+            state.videoHeight
+
+          state.orientation =
+            orientation ??
+            state.orientation
+
+          scheduleCameraLayout(
+            0,
+          )
+        },
+
+        onVideoSizeChange({
+          videoWidth,
+          videoHeight,
+          orientation,
+        }) {
+          state.videoWidth =
+            videoWidth ||
+            state.videoWidth
+
+          state.videoHeight =
+            videoHeight ||
+            state.videoHeight
+
+          state.orientation =
+            orientation ??
+            state.orientation
+
+          scheduleCameraLayout(
+            20,
+          )
         },
 
         onCanvasSizeChange() {
-          updateViewportSize()
-          enforceLayerOrder()
+          if (
+            !state.resizeLock
+          ) {
+            scheduleCameraLayout(
+              20,
+            )
+          }
         },
 
-        onDeviceOrientationChange() {
-          window.setTimeout(
-            updateViewportSize,
-            100,
-          )
+        onDeviceOrientationChange({
+          orientation,
+        }) {
+          state.orientation =
+            orientation ??
+            state.orientation
 
-          window.setTimeout(
-            enforceLayerOrder,
-            150,
+          scheduleCameraLayout(
+            120,
           )
         },
 
@@ -1988,60 +3538,67 @@
           processGpuResult,
         }) {
           const reality =
-            processCpuResult?.reality
+            processCpuResult
+              ?.reality
 
           if (!reality) {
             return
           }
 
           state.trackingStatus =
-            reality.trackingStatus ||
+            reality
+              .trackingStatus ||
             'UNKNOWN'
 
           state.trackingReason =
-            reality.trackingReason ||
+            reality
+              .trackingReason ||
             null
 
           const now =
             performance.now()
 
-          /*
-           * 벽 표면 검사 약 8Hz
-           */
           if (
             now -
-            state.sampleTimer >
-            125
+            state.sampleTimer >=
+            DETECTION
+              .sampleIntervalMs
           ) {
-            state.sampleTimer = now
+            state.sampleTimer =
+              now
 
-            sampleWallCandidate(
+            scanWall(
               XR8,
+
+              reality.worldPoints ||
+                [],
+
+              now,
             )
           }
 
-          /*
-           * 디버그 표시 약 4Hz
-           */
           if (
             now -
-            state.debugTimer >
-            250
+            state.debugTimer >=
+            300
           ) {
-            state.debugTimer = now
+            state.debugTimer =
+              now
 
             updateDebug({
-              points:
+              worldPoints:
                 reality.worldPoints
                   ?.length || 0,
 
-              distance:
+              inliers:
                 state.wallCandidate
                   ? `${
                       state.wallCandidate
-                        .distance
-                        .toFixed(2)
-                    }m`
+                        .inlierCount
+                    }/${
+                      state.wallCandidate
+                        .totalCount
+                    }`
                   : '-',
 
               planeError:
@@ -2055,9 +3612,25 @@
                     }cm`
                   : '-',
 
-              samples:
+              extent:
                 state.wallCandidate
-                  ?.hitCount || 0,
+                  ? `${
+                      state.wallCandidate
+                        .extentWidth
+                        .toFixed(2)
+                    }×${
+                      state.wallCandidate
+                        .extentHeight
+                        .toFixed(2)
+                    }m`
+                  : '-',
+
+              confidence:
+                state.wallCandidate
+                  ? state.wallCandidate
+                      .confidence
+                      .toFixed(2)
+                  : '-',
 
               gpu:
                 processGpuResult
@@ -2068,7 +3641,7 @@
         },
 
         onPaused() {
-          setReticleReady(false)
+          clearWallDetection()
 
           setStatus(
             '카메라가 일시 중지되었습니다.',
@@ -2076,13 +3649,11 @@
         },
 
         onResume() {
-          state.wallCandidate = null
+          clearWallDetection()
 
-          state.wallCandidateLastSeen =
-            0
-
-          updateViewportSize()
-          enforceLayerOrder()
+          scheduleCameraLayout(
+            100,
+          )
 
           setStatus(
             '공간 추적을 복구하는 중입니다.',
@@ -2094,8 +3665,6 @@
             'XR pipeline error:',
             error,
           )
-
-          enforceLayerOrder()
 
           showError(
             'AR 실행 중 오류가 발생했습니다.\n' +
@@ -2110,15 +3679,11 @@
         return
       }
 
-      if (!XR8) {
-        throw new Error(
-          'XR8 엔진 인스턴스가 없습니다.',
-        )
-      }
+      state.xrStarted =
+        true
 
-      state.xrStarted = true
-
-      enforceLayerOrder()
+      state.XR8 =
+        XR8
 
       XR8.XrController.configure({
         disableWorldTracking:
@@ -2134,12 +3699,6 @@
           'absolute',
       })
 
-      /*
-       * XRExtras는 사용하지 않습니다.
-       *
-       * FullWindowCanvas의 DOM 이동과
-       * Loading overlay가 UI를 가리는 가능성을 제거합니다.
-       */
       XR8.addCameraPipelineModules([
         XR8.GlTextureRenderer
           .pipelineModule(),
@@ -2159,14 +3718,15 @@
         canvas,
 
         allowedDevices:
-          XR8.XrConfig.device()
+          XR8.XrConfig
+            .device()
             .ANY,
       })
     }
 
     /*
      * -------------------------------------------------------
-     * 사용자 입력
+     * 이벤트
      * -------------------------------------------------------
      */
 
@@ -2174,16 +3734,21 @@
       'change',
       async event => {
         const file =
-          event.target.files?.[0]
+          event.target
+            .files?.[0]
 
         if (!file) {
           return
         }
 
         try {
-          await loadArtwork(file)
+          await loadArtwork(
+            file,
+          )
         } catch (error) {
-          console.error(error)
+          console.error(
+            error,
+          )
 
           setStatus(
             error instanceof Error
@@ -2191,7 +3756,8 @@
               : '이미지를 불러오지 못했습니다.',
           )
         } finally {
-          event.target.value = ''
+          event.target.value =
+            ''
         }
       },
     )
@@ -2203,6 +3769,40 @@
         event.stopPropagation()
 
         placeArtwork()
+      },
+    )
+
+    recenterButton.addEventListener(
+      'click',
+      event => {
+        event.preventDefault()
+        event.stopPropagation()
+
+        recenterTracking()
+      },
+    )
+
+    fitButton.addEventListener(
+      'click',
+      event => {
+        event.preventDefault()
+        event.stopPropagation()
+
+        state.cameraFit =
+          state.cameraFit ===
+          'contain'
+            ? 'cover'
+            : 'contain'
+
+        fitButton.textContent =
+          state.cameraFit ===
+          'contain'
+            ? '화면 채우기'
+            : '원본 비율'
+
+        scheduleCameraLayout(
+          0,
+        )
       },
     )
 
@@ -2223,16 +3823,66 @@
       },
     )
 
-    /*
-     * UI 레이어 터치가 canvas로 전달되지 않도록 합니다.
-     */
-    controls.addEventListener?.(
+    controls.addEventListener(
       'touchstart',
       event => {
         event.stopPropagation()
       },
       {
         passive: true,
+      },
+    )
+
+    window.addEventListener(
+      'resize',
+      () => {
+        scheduleCameraLayout(
+          50,
+        )
+      },
+      {
+        passive: true,
+      },
+    )
+
+    window.addEventListener(
+      'orientationchange',
+      () => {
+        scheduleCameraLayout(
+          180,
+        )
+      },
+      {
+        passive: true,
+      },
+    )
+
+    window.visualViewport
+      ?.addEventListener(
+        'resize',
+        () => {
+          scheduleCameraLayout(
+            50,
+          )
+        },
+        {
+          passive: true,
+        },
+      )
+
+    const bodyObserver =
+      new MutationObserver(
+        () => {
+          requestAnimationFrame(
+            enforceLayerOrder,
+          )
+        },
+      )
+
+    bodyObserver.observe(
+      document.body,
+      {
+        childList: true,
       },
     )
 
@@ -2247,16 +3897,20 @@
         return
       }
 
-      state.xrLoading = true
+      state.xrLoading =
+        true
 
       hideError()
       enableImageInput(false)
 
       enforceLayerOrder()
+      updateViewportVariable()
       updateDebug()
 
       try {
-        if (!window.isSecureContext) {
+        if (
+          !window.isSecureContext
+        ) {
           throw new Error(
             '카메라 사용에는 HTTPS 연결이 필요합니다.\n' +
             'GitHub Pages HTTPS 주소에서 실행해 주세요.',
@@ -2270,8 +3924,6 @@
         const XR8 =
           await loadXR8Engine()
 
-        enforceLayerOrder()
-
         setStatus(
           'AR 카메라를 시작하는 중입니다.',
         )
@@ -2283,15 +3935,14 @@
           error,
         )
 
-        enforceLayerOrder()
-
         showError(
           error instanceof Error
             ? error.message
             : 'AR 초기화에 실패했습니다.',
         )
       } finally {
-        state.xrLoading = false
+        state.xrLoading =
+          false
       }
     }
 
