@@ -28,22 +28,31 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    html,
-    body {
+    html {
       width: 100%;
-      height: var(--app-height);
-      min-height: var(--app-height);
+      height: 100%;
       margin: 0;
       padding: 0;
       overflow: hidden;
-      overscroll-behavior: none;
       background: #000;
     }
 
     body {
-      position: fixed;
-      inset: 0;
+      position: fixed !important;
+      inset: 0 !important;
+
+      width: 100vw !important;
+      height: var(--app-height) !important;
+
+      margin: 0 !important;
+      padding: 0 !important;
+
+      overflow: hidden !important;
+      overscroll-behavior: none;
       touch-action: none;
+
+      background: #000;
+
       font-family:
         system-ui,
         -apple-system,
@@ -52,137 +61,225 @@
         sans-serif;
     }
 
-    #app {
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      height: var(--app-height);
-      overflow: hidden;
-      background: #000;
-    }
-
+    /*
+     * XR8 카메라 canvas
+     *
+     * 반드시 UI보다 아래에 위치시킵니다.
+     */
     #camerafeed {
-      position: absolute;
-      inset: 0;
-      display: block;
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      background: #000;
+      position: fixed !important;
+      inset: 0 !important;
+
+      z-index: 0 !important;
+
+      display: block !important;
+
+      width: 100vw !important;
+      height: var(--app-height) !important;
+
+      max-width: none !important;
+      max-height: none !important;
+
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+
+      background: #000 !important;
+
+      object-fit: cover !important;
+      pointer-events: none !important;
     }
 
-    #ui {
-      position: fixed;
-      inset: 0;
-      z-index: 10;
-      width: 100vw;
-      height: var(--app-height);
-      pointer-events: none;
+    /*
+     * 모든 HTML UI를 담는 최상위 레이어입니다.
+     *
+     * XR8이나 외부 스크립트가 canvas 위치 또는
+     * z-index를 변경해도 화면 위에 남도록 합니다.
+     */
+    #arUiRoot {
+      position: fixed !important;
+      inset: 0 !important;
+
+      z-index: 2147483647 !important;
+
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+
+      width: 100vw !important;
+      height: var(--app-height) !important;
+
+      overflow: hidden !important;
+
+      pointer-events: none !important;
+
+      isolation: isolate;
+      transform: translateZ(0);
     }
 
     #status {
-      position: absolute;
-      top: max(16px, env(safe-area-inset-top));
+      position: absolute !important;
+
+      top: max(
+        14px,
+        env(safe-area-inset-top)
+      );
+
       left: 50%;
+
+      z-index: 20;
+
       width: max-content;
-      max-width: calc(100vw - 32px);
+      max-width: calc(100vw - 28px);
+
       padding: 10px 14px;
+
       overflow: hidden;
-      border: 1px solid rgb(255 255 255 / 14%);
+
+      border: 1px solid rgb(255 255 255 / 18%);
       border-radius: 999px;
-      background: rgb(0 0 0 / 68%);
+
+      background: rgb(0 0 0 / 72%);
       color: #fff;
+
       font-size: 14px;
+      font-weight: 600;
       line-height: 1.4;
+
       text-align: center;
       text-overflow: ellipsis;
       white-space: nowrap;
-      transform: translateX(-50%);
+
+      box-shadow: 0 5px 20px rgb(0 0 0 / 25%);
       backdrop-filter: blur(10px);
+
+      transform: translateX(-50%);
+
+      pointer-events: none;
     }
 
     #reticle {
-      position: absolute;
+      position: absolute !important;
+
       top: 50%;
       left: 50%;
+
+      z-index: 15;
+
       width: 48px;
       height: 48px;
-      border: 2px solid rgb(255 255 255 / 88%);
+
+      border: 2px solid rgb(255 255 255 / 90%);
       border-radius: 50%;
-      color: white;
+
+      color: #fff;
+
       box-shadow:
-        0 0 0 1px rgb(0 0 0 / 45%),
-        0 0 18px rgb(255 255 255 / 15%);
+        0 0 0 1px rgb(0 0 0 / 50%),
+        0 0 18px rgb(255 255 255 / 18%);
+
       transform: translate(-50%, -50%);
+
       transition:
         width 160ms ease,
         height 160ms ease,
+        color 160ms ease,
         border-color 160ms ease,
         box-shadow 160ms ease;
+
+      pointer-events: none;
     }
 
     #reticle::before,
     #reticle::after {
       position: absolute;
+
       top: 50%;
       left: 50%;
+
       background: currentColor;
+
       content: "";
-      opacity: 0.78;
+
       transform: translate(-50%, -50%);
     }
 
     #reticle::before {
-      width: 16px;
+      width: 18px;
       height: 1px;
     }
 
     #reticle::after {
       width: 1px;
-      height: 16px;
+      height: 18px;
     }
 
     #reticle.ready {
-      width: 56px;
-      height: 56px;
+      width: 58px;
+      height: 58px;
+
       border-color: #58f59a;
       color: #58f59a;
+
       box-shadow:
-        0 0 0 1px rgb(0 0 0 / 45%),
-        0 0 25px rgb(88 245 154 / 50%);
+        0 0 0 1px rgb(0 0 0 / 50%),
+        0 0 28px rgb(88 245 154 / 55%);
     }
 
     #controls {
-      position: absolute;
-      right: 14px;
-      bottom: max(18px, env(safe-area-inset-bottom));
-      left: 14px;
-      display: flex;
+      position: absolute !important;
+
+      right: 12px;
+      bottom: max(
+        18px,
+        env(safe-area-inset-bottom)
+      );
+      left: 12px;
+
+      z-index: 30;
+
+      display: flex !important;
+
       align-items: center;
       justify-content: center;
+
       gap: 8px;
-      pointer-events: auto;
+
+      pointer-events: auto !important;
     }
 
     button,
     .file-button {
-      display: inline-flex;
+      position: relative;
+
+      display: inline-flex !important;
+
       min-height: 48px;
+
       align-items: center;
       justify-content: center;
-      padding: 0 17px;
+
+      padding: 0 16px;
+
       border: 0;
       border-radius: 999px;
+
       background: rgb(255 255 255 / 96%);
       color: #111;
+
       font: inherit;
       font-size: 14px;
       font-weight: 750;
+
       white-space: nowrap;
-      box-shadow: 0 5px 20px rgb(0 0 0 / 30%);
+
+      box-shadow:
+        0 5px 20px rgb(0 0 0 / 32%);
+
       cursor: pointer;
       user-select: none;
+
+      pointer-events: auto !important;
     }
 
     button:active,
@@ -192,8 +289,8 @@
 
     button:disabled,
     .file-button.disabled {
-      cursor: default;
       opacity: 0.42;
+      cursor: default;
       transform: none;
     }
 
@@ -202,42 +299,80 @@
     }
 
     #imageInput {
-      display: none;
+      position: absolute;
+
+      width: 1px;
+      height: 1px;
+
+      overflow: hidden;
+
+      opacity: 0;
+
+      pointer-events: none;
     }
 
     #debug {
-      position: absolute;
+      position: absolute !important;
+
       right: 10px;
+
       bottom: calc(
-        max(18px, env(safe-area-inset-bottom)) + 66px
+        max(
+          18px,
+          env(safe-area-inset-bottom)
+        ) + 68px
       );
-      max-width: 190px;
+
+      z-index: 25;
+
+      max-width: 195px;
+
       padding: 8px 10px;
-      border: 1px solid rgb(255 255 255 / 12%);
+
+      border: 1px solid rgb(255 255 255 / 14%);
       border-radius: 9px;
-      background: rgb(0 0 0 / 66%);
+
+      background: rgb(0 0 0 / 68%);
       color: #fff;
-      font: 11px/1.45 ui-monospace, monospace;
+
+      font:
+        10px/1.5
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        monospace;
+
       white-space: pre-wrap;
-      pointer-events: none;
+
+      box-shadow: 0 5px 18px rgb(0 0 0 / 24%);
       backdrop-filter: blur(8px);
+
+      pointer-events: none;
     }
 
     #errorPanel {
-      position: fixed;
-      inset: 0;
+      position: absolute !important;
+      inset: 0 !important;
+
       z-index: 100;
+
       display: none;
+
       align-items: center;
       justify-content: center;
+
       padding: 24px;
+
       background: rgb(0 0 0 / 94%);
-      color: white;
+      color: #fff;
+
       text-align: center;
+
+      pointer-events: auto !important;
     }
 
     #errorPanel.visible {
-      display: flex;
+      display: flex !important;
     }
 
     #errorPanelContent {
@@ -247,33 +382,37 @@
 
     #errorTitle {
       margin: 0 0 12px;
+
       font-size: 22px;
+      line-height: 1.35;
     }
 
     #errorMessage {
       margin: 0 0 22px;
+
       color: rgb(255 255 255 / 78%);
+
       font-size: 15px;
       line-height: 1.65;
+
       white-space: pre-line;
     }
 
     #reloadButton {
-      min-width: 140px;
-      pointer-events: auto;
+      min-width: 150px;
     }
 
     @media (max-width: 420px) {
       button,
       .file-button {
         min-height: 46px;
-        padding: 0 13px;
+        padding: 0 12px;
         font-size: 13px;
       }
 
       #debug {
-        max-width: 160px;
-        font-size: 10px;
+        max-width: 165px;
+        font-size: 9px;
       }
     }
   </style>
@@ -288,49 +427,53 @@
 </head>
 
 <body>
-  <main id="app">
-    <canvas id="camerafeed"></canvas>
+  <!-- XR8 카메라 출력 -->
+  <canvas id="camerafeed"></canvas>
 
-    <section id="ui">
-      <div id="status">
-        애플리케이션을 준비하는 중입니다.
-      </div>
+  <!-- HTML 인터페이스 -->
+  <div id="arUiRoot">
+    <div id="status">
+      애플리케이션을 준비하는 중입니다.
+    </div>
 
-      <div id="reticle"></div>
+    <div id="reticle"></div>
 
-      <div id="debug"></div>
+    <div id="debug">
+      UI: READY
+      XR8: WAIT
+    </div>
 
-      <div id="controls">
-        <label
-          id="fileButton"
-          class="file-button disabled"
-        >
-          이미지 선택
+    <div id="controls">
+      <label
+        id="fileButton"
+        class="file-button disabled"
+        for="imageInput"
+      >
+        이미지 선택
 
-          <input
-            id="imageInput"
-            type="file"
-            accept="image/*"
-            disabled
-          >
-        </label>
-
-        <button
-          id="placeButton"
-          type="button"
+        <input
+          id="imageInput"
+          type="file"
+          accept="image/*"
           disabled
         >
-          벽에 배치
-        </button>
+      </label>
 
-        <button
-          id="resetButton"
-          type="button"
-        >
-          초기화
-        </button>
-      </div>
-    </section>
+      <button
+        id="placeButton"
+        type="button"
+        disabled
+      >
+        벽에 배치
+      </button>
+
+      <button
+        id="resetButton"
+        type="button"
+      >
+        초기화
+      </button>
+    </div>
 
     <section id="errorPanel">
       <div id="errorPanelContent">
@@ -348,13 +491,14 @@
         </button>
       </div>
     </section>
-  </main>
+  </div>
 
   <script type="module">
     import * as THREE from 'three'
 
     /*
-     * XR8 엔진을 불러오기 전에 Three.js를 전역에 등록합니다.
+     * XR8의 Three.js 파이프라인이 참조할 수 있도록
+     * Three.js를 전역에 등록합니다.
      */
     window.THREE = THREE
 
@@ -362,16 +506,14 @@
       'https://cdn.jsdelivr.net/npm/' +
       '@8thwall/engine-binary@1/dist/xr.js'
 
-    const XR_EXTRAS_URL =
-      'https://cdn.jsdelivr.net/npm/' +
-      '@8thwall/xrextras@1/dist/xrextras.js'
-
     const WORLD_UP =
       new THREE.Vector3(0, 1, 0)
 
+    const CENTER_NDC =
+      new THREE.Vector2(0, 0)
+
     /*
-     * 화면 중앙 주변의 hit-test 위치입니다.
-     * 좌표는 0~1 범위입니다.
+     * 화면 중앙 주변 표면 검사 지점
      */
     const WALL_SAMPLE_POINTS = {
       center: [0.50, 0.50],
@@ -408,10 +550,15 @@
 
       xrStarted: false,
       xrLoading: false,
+
+      cameraStatus: 'IDLE',
     }
 
     const canvas =
       document.querySelector('#camerafeed')
+
+    const uiRoot =
+      document.querySelector('#arUiRoot')
 
     const statusElement =
       document.querySelector('#status')
@@ -445,6 +592,141 @@
 
     /*
      * -------------------------------------------------------
+     * 레이어 순서 강제
+     * -------------------------------------------------------
+     */
+
+    function enforceLayerOrder() {
+      /*
+       * 카메라 canvas는 가장 아래에 둡니다.
+       */
+      canvas.style.setProperty(
+        'position',
+        'fixed',
+        'important',
+      )
+
+      canvas.style.setProperty(
+        'inset',
+        '0',
+        'important',
+      )
+
+      canvas.style.setProperty(
+        'z-index',
+        '0',
+        'important',
+      )
+
+      canvas.style.setProperty(
+        'display',
+        'block',
+        'important',
+      )
+
+      canvas.style.setProperty(
+        'visibility',
+        'visible',
+        'important',
+      )
+
+      canvas.style.setProperty(
+        'opacity',
+        '1',
+        'important',
+      )
+
+      canvas.style.setProperty(
+        'width',
+        '100vw',
+        'important',
+      )
+
+      canvas.style.setProperty(
+        'height',
+        'var(--app-height)',
+        'important',
+      )
+
+      /*
+       * UI는 항상 canvas보다 위에 둡니다.
+       */
+      uiRoot.style.setProperty(
+        'position',
+        'fixed',
+        'important',
+      )
+
+      uiRoot.style.setProperty(
+        'inset',
+        '0',
+        'important',
+      )
+
+      uiRoot.style.setProperty(
+        'z-index',
+        '2147483647',
+        'important',
+      )
+
+      uiRoot.style.setProperty(
+        'display',
+        'block',
+        'important',
+      )
+
+      uiRoot.style.setProperty(
+        'visibility',
+        'visible',
+        'important',
+      )
+
+      uiRoot.style.setProperty(
+        'opacity',
+        '1',
+        'important',
+      )
+
+      uiRoot.style.setProperty(
+        'pointer-events',
+        'none',
+        'important',
+      )
+
+      /*
+       * 외부 코드가 다른 DOM 요소를 body 마지막에 넣었더라도
+       * UI를 다시 마지막 자식으로 이동시킵니다.
+       */
+      if (
+        uiRoot.parentElement !== document.body ||
+        document.body.lastElementChild !== uiRoot
+      ) {
+        document.body.appendChild(uiRoot)
+      }
+    }
+
+    enforceLayerOrder()
+
+    /*
+     * XR8이 실행 중 DOM 구조를 수정하는 경우에도
+     * UI 레이어를 다시 최상단으로 복구합니다.
+     */
+    const bodyObserver =
+      new MutationObserver(() => {
+        window.requestAnimationFrame(
+          enforceLayerOrder,
+        )
+      })
+
+    bodyObserver.observe(
+      document.body,
+      {
+        childList: true,
+      },
+    )
+
+    /*
+     * -------------------------------------------------------
      * 모바일 viewport
      * -------------------------------------------------------
      */
@@ -458,6 +740,8 @@
         '--app-height',
         `${Math.round(viewportHeight)}px`,
       )
+
+      enforceLayerOrder()
     }
 
     updateViewportSize()
@@ -471,20 +755,26 @@
     window.addEventListener(
       'orientationchange',
       () => {
-        setTimeout(updateViewportSize, 100)
-        setTimeout(updateViewportSize, 400)
+        window.setTimeout(
+          updateViewportSize,
+          100,
+        )
+
+        window.setTimeout(
+          updateViewportSize,
+          400,
+        )
+
+        window.setTimeout(
+          updateViewportSize,
+          800,
+        )
       },
       {passive: true},
     )
 
     window.visualViewport?.addEventListener(
       'resize',
-      updateViewportSize,
-      {passive: true},
-    )
-
-    window.visualViewport?.addEventListener(
-      'scroll',
       updateViewportSize,
       {passive: true},
     )
@@ -501,11 +791,18 @@
 
     function showError(message) {
       errorMessage.textContent = message
-      errorPanel.classList.add('visible')
+
+      errorPanel.classList.add(
+        'visible',
+      )
+
+      enforceLayerOrder()
     }
 
     function hideError() {
-      errorPanel.classList.remove('visible')
+      errorPanel.classList.remove(
+        'visible',
+      )
     }
 
     function enableImageInput(enabled) {
@@ -531,18 +828,30 @@
 
     function updateDebug(extra = {}) {
       const lines = [
+        'UI: READY',
+        `XR8: ${window.XR8 ? 'READY' : 'WAIT'}`,
+        `camera: ${state.cameraStatus}`,
         `tracking: ${state.trackingStatus}`,
         `reason: ${state.trackingReason || '-'}`,
-        `xr8: ${window.XR8 ? 'READY' : 'WAIT'}`,
-        `wall: ${state.wallCandidate ? 'READY' : 'SEARCHING'}`,
-        `artwork: ${state.artwork ? 'YES' : 'NO'}`,
+        `wall: ${
+          state.wallCandidate
+            ? 'READY'
+            : 'SEARCHING'
+        }`,
+        `artwork: ${
+          state.artwork
+            ? 'YES'
+            : 'NO'
+        }`,
       ]
 
       for (
         const [key, value]
         of Object.entries(extra)
       ) {
-        lines.push(`${key}: ${value}`)
+        lines.push(
+          `${key}: ${value}`,
+        )
       }
 
       debugElement.textContent =
@@ -551,140 +860,7 @@
 
     /*
      * -------------------------------------------------------
-     * 일반 외부 스크립트 로딩
-     * -------------------------------------------------------
-     */
-
-    function loadExternalScript(
-      src,
-      options = {},
-    ) {
-      return new Promise(
-        (resolve, reject) => {
-          const {
-            id,
-            timeout = 20000,
-          } = options
-
-          if (
-            id &&
-            document.getElementById(id)
-          ) {
-            resolve()
-            return
-          }
-
-          const existing =
-            document.querySelector(
-              `script[src="${src}"]`,
-            )
-
-          if (existing) {
-            if (
-              existing.dataset.loaded ===
-              'true'
-            ) {
-              resolve()
-              return
-            }
-
-            existing.addEventListener(
-              'load',
-              resolve,
-              {once: true},
-            )
-
-            existing.addEventListener(
-              'error',
-              () => {
-                reject(
-                  new Error(
-                    `스크립트를 불러오지 못했습니다.\n${src}`,
-                  ),
-                )
-              },
-              {once: true},
-            )
-
-            return
-          }
-
-          const script =
-            document.createElement('script')
-
-          if (id) {
-            script.id = id
-          }
-
-          script.src = src
-          script.async = true
-          script.crossOrigin = 'anonymous'
-
-          let completed = false
-
-          const timeoutId =
-            window.setTimeout(() => {
-              if (completed) {
-                return
-              }
-
-              completed = true
-
-              reject(
-                new Error(
-                  `스크립트 로딩 시간이 초과되었습니다.\n${src}`,
-                ),
-              )
-            }, timeout)
-
-          script.addEventListener(
-            'load',
-            () => {
-              if (completed) {
-                return
-              }
-
-              completed = true
-              script.dataset.loaded = 'true'
-
-              window.clearTimeout(timeoutId)
-
-              resolve()
-            },
-            {once: true},
-          )
-
-          script.addEventListener(
-            'error',
-            () => {
-              if (completed) {
-                return
-              }
-
-              completed = true
-
-              window.clearTimeout(timeoutId)
-
-              reject(
-                new Error(
-                  `스크립트를 불러오지 못했습니다.\n${src}`,
-                ),
-              )
-            },
-            {once: true},
-          )
-
-          document.head.appendChild(script)
-        },
-      )
-    }
-
-    /*
-     * -------------------------------------------------------
-     * XR8 전용 로딩
-     *
-     * script load만 기다리지 않고 xrloaded 이벤트 및
-     * window.XR8 생성을 기다립니다.
+     * XR8 엔진 로딩
      * -------------------------------------------------------
      */
 
@@ -696,10 +872,10 @@
             return
           }
 
-          const timeoutMilliseconds = 30000
-          const pollingMilliseconds = 100
+          const timeoutMilliseconds =
+            30000
 
-          let finished = false
+          let completed = false
           let pollingId = null
 
           const timeoutId =
@@ -707,16 +883,20 @@
               finishWithError(
                 new Error(
                   'XR8 초기화 시간이 초과되었습니다.\n' +
-                  '네트워크 연결, CDN 접근 또는 브라우저 콘솔을 확인해 주세요.',
+                  '네트워크 연결과 CDN 접근 상태를 확인해 주세요.',
                 ),
               )
             }, timeoutMilliseconds)
 
           function cleanup() {
-            window.clearTimeout(timeoutId)
+            window.clearTimeout(
+              timeoutId,
+            )
 
             if (pollingId !== null) {
-              window.clearInterval(pollingId)
+              window.clearInterval(
+                pollingId,
+              )
             }
 
             window.removeEventListener(
@@ -727,24 +907,24 @@
 
           function finishWithXR8() {
             if (
-              finished ||
+              completed ||
               !window.XR8
             ) {
               return
             }
 
-            finished = true
+            completed = true
             cleanup()
 
             resolve(window.XR8)
           }
 
           function finishWithError(error) {
-            if (finished) {
+            if (completed) {
               return
             }
 
-            finished = true
+            completed = true
             cleanup()
 
             reject(error)
@@ -755,21 +935,17 @@
           }
 
           /*
-           * script를 삽입하기 전에 이벤트를 먼저 등록합니다.
+           * 스크립트를 넣기 전에 이벤트부터 등록합니다.
            */
           window.addEventListener(
             'xrloaded',
             handleXRLoaded,
           )
 
-          /*
-           * 일부 브라우저에서 이벤트 처리 시점을 놓치는 상황을
-           * 대비해 window.XR8도 주기적으로 확인합니다.
-           */
           pollingId =
             window.setInterval(
               finishWithXR8,
-              pollingMilliseconds,
+              100,
             )
 
           const existingScript =
@@ -778,22 +954,24 @@
             )
 
           if (existingScript) {
-            /*
-             * 기존 script가 있으면 새로 만들지 않고
-             * XR8 생성만 기다립니다.
-             */
             finishWithXR8()
             return
           }
 
           const script =
-            document.createElement('script')
+            document.createElement(
+              'script',
+            )
 
-          script.src = XR8_ENGINE_URL
+          script.src =
+            XR8_ENGINE_URL
+
           script.async = true
-          script.crossOrigin = 'anonymous'
+          script.crossOrigin =
+            'anonymous'
 
-          script.dataset.xr8Engine = 'true'
+          script.dataset.xr8Engine =
+            'true'
 
           script.setAttribute(
             'data-preload-chunks',
@@ -802,13 +980,7 @@
 
           script.addEventListener(
             'load',
-            () => {
-              /*
-               * script 다운로드 완료와 XR8 생성 완료는
-               * 같은 시점이 아닐 수 있습니다.
-               */
-              finishWithXR8()
-            },
+            finishWithXR8,
             {once: true},
           )
 
@@ -817,22 +989,23 @@
             () => {
               finishWithError(
                 new Error(
-                  '8th Wall XR 엔진 파일을 불러오지 못했습니다.\n' +
-                  'CDN 주소와 네트워크 연결을 확인해 주세요.',
+                  '8th Wall XR 엔진 파일을 불러오지 못했습니다.',
                 ),
               )
             },
             {once: true},
           )
 
-          document.head.appendChild(script)
+          document.head.appendChild(
+            script,
+          )
         },
       )
     }
 
     /*
      * -------------------------------------------------------
-     * Three.js 이미지 리소스
+     * Three.js 이미지
      * -------------------------------------------------------
      */
 
@@ -866,15 +1039,14 @@
 
       if (state.artworkTexture) {
         state.artworkTexture.dispose()
+
         state.artworkTexture = null
       }
 
       placeButton.disabled = true
     }
 
-    async function createResizedCanvas(
-      file,
-    ) {
+    async function createResizedCanvas(file) {
       const bitmap =
         await createImageBitmap(file)
 
@@ -890,34 +1062,41 @@
             ),
         )
 
-        const outputWidth = Math.max(
-          1,
-          Math.round(
-            bitmap.width *
-            resizeRatio,
-          ),
-        )
+        const outputWidth =
+          Math.max(
+            1,
+            Math.round(
+              bitmap.width *
+              resizeRatio,
+            ),
+          )
 
-        const outputHeight = Math.max(
-          1,
-          Math.round(
-            bitmap.height *
-            resizeRatio,
-          ),
-        )
+        const outputHeight =
+          Math.max(
+            1,
+            Math.round(
+              bitmap.height *
+              resizeRatio,
+            ),
+          )
 
         const imageCanvas =
           document.createElement(
             'canvas',
           )
 
-        imageCanvas.width = outputWidth
-        imageCanvas.height = outputHeight
+        imageCanvas.width =
+          outputWidth
+
+        imageCanvas.height =
+          outputHeight
 
         const context =
           imageCanvas.getContext(
             '2d',
-            {alpha: true},
+            {
+              alpha: true,
+            },
           )
 
         if (!context) {
@@ -948,7 +1127,9 @@
       }
 
       if (
-        !file.type.startsWith('image/')
+        !file.type.startsWith(
+          'image/',
+        )
       ) {
         throw new Error(
           '이미지 파일만 선택할 수 있습니다.',
@@ -962,7 +1143,9 @@
       )
 
       const imageCanvas =
-        await createResizedCanvas(file)
+        await createResizedCanvas(
+          file,
+        )
 
       const texture =
         new THREE.CanvasTexture(
@@ -975,11 +1158,13 @@
       texture.needsUpdate = true
 
       if (state.renderer) {
-        texture.anisotropy = Math.min(
-          8,
-          state.renderer.capabilities
-            .getMaxAnisotropy(),
-        )
+        texture.anisotropy =
+          Math.min(
+            8,
+            state.renderer
+              .capabilities
+              .getMaxAnisotropy(),
+          )
       }
 
       /*
@@ -1001,9 +1186,14 @@
       const material =
         new THREE.MeshBasicMaterial({
           map: texture,
+
           transparent: true,
-          side: THREE.DoubleSide,
+
+          side:
+            THREE.DoubleSide,
+
           toneMapped: false,
+
           depthTest: true,
           depthWrite: true,
         })
@@ -1014,17 +1204,26 @@
           material,
         )
 
-      artwork.name = 'wall-artwork'
+      artwork.name =
+        'wall-artwork'
+
       artwork.visible = false
       artwork.renderOrder = 10
 
-      state.scene.add(artwork)
+      state.scene.add(
+        artwork,
+      )
 
-      state.artwork = artwork
-      state.artworkTexture = texture
+      state.artwork =
+        artwork
+
+      state.artworkTexture =
+        texture
 
       setReticleReady(
-        Boolean(state.wallCandidate),
+        Boolean(
+          state.wallCandidate,
+        ),
       )
 
       if (state.wallCandidate) {
@@ -1040,7 +1239,7 @@
 
     /*
      * -------------------------------------------------------
-     * 벽면 hit-test
+     * 벽면 추정
      * -------------------------------------------------------
      */
 
@@ -1082,15 +1281,21 @@
       let count = 0
 
       for (const name of names) {
-        const hit = hitMap[name]
+        const hit =
+          hitMap[name]
 
         if (!hit) {
           continue
         }
 
-        result.x += hit.position.x
-        result.y += hit.position.y
-        result.z += hit.position.z
+        result.x +=
+          hit.position.x
+
+        result.y +=
+          hit.position.y
+
+        result.z +=
+          hit.position.z
 
         count += 1
       }
@@ -1109,9 +1314,14 @@
         new THREE.Vector3()
 
       for (const hit of hits) {
-        centroid.x += hit.position.x
-        centroid.y += hit.position.y
-        centroid.z += hit.position.z
+        centroid.x +=
+          hit.position.x
+
+        centroid.y +=
+          hit.position.y
+
+        centroid.z +=
+          hit.position.z
       }
 
       return centroid.multiplyScalar(
@@ -1178,7 +1388,7 @@
           )
           .normalize()
 
-      const basisMatrix =
+      const matrix =
         new THREE.Matrix4()
           .makeBasis(
             right,
@@ -1188,13 +1398,11 @@
 
       return new THREE.Quaternion()
         .setFromRotationMatrix(
-          basisMatrix,
+          matrix,
         )
     }
 
-    function estimateWallCandidate(
-      XR8,
-    ) {
+    function estimateWallCandidate(XR8) {
       if (!state.camera) {
         return null
       }
@@ -1354,7 +1562,7 @@
           .sub(centroid)
 
       /*
-       * 벽 normal은 카메라 쪽을 향하게 합니다.
+       * normal을 카메라 방향으로 정렬
        */
       if (
         normal.dot(
@@ -1369,21 +1577,22 @@
        */
       const normalY =
         Math.abs(
-          normal.dot(WORLD_UP),
+          normal.dot(
+            WORLD_UP,
+          ),
         )
 
       if (normalY > 0.35) {
         return null
       }
 
-      /*
-       * 평면 RMS 오차 계산
-       */
       let squaredErrorSum = 0
 
       for (const hit of validHits) {
         const point =
-          hitPositionToVector(hit)
+          hitPositionToVector(
+            hit,
+          )
 
         const planeDistance =
           point
@@ -1416,7 +1625,7 @@
         new THREE.Raycaster()
 
       raycaster.setFromCamera(
-        new THREE.Vector2(0, 0),
+        CENTER_NDC,
         state.camera,
       )
 
@@ -1444,7 +1653,9 @@
 
       const reportedDistances =
         validHits
-          .map(hit => hit.distance)
+          .map(
+            hit => hit.distance,
+          )
           .filter(
             Number.isFinite,
           )
@@ -1458,7 +1669,8 @@
         const allowedDifference =
           Math.max(
             0.35,
-            reportedDistance * 0.25,
+            reportedDistance *
+              0.25,
           )
 
         if (
@@ -1501,13 +1713,11 @@
 
     /*
      * -------------------------------------------------------
-     * 벽 후보 안정화
+     * 벽 후보 smoothing
      * -------------------------------------------------------
      */
 
-    function sampleWallCandidate(
-      XR8,
-    ) {
+    function sampleWallCandidate(XR8) {
       if (
         state.trackingStatus !==
         'NORMAL'
@@ -1568,26 +1778,23 @@
           )
           .normalize()
 
-        const smoothedQuaternion =
+        const quaternion =
           createWallQuaternion(
-            state.wallCandidate.normal,
+            state.wallCandidate
+              .normal,
           )
 
-        if (smoothedQuaternion) {
+        if (quaternion) {
           state.wallCandidate
             .quaternion
             .slerp(
-              smoothedQuaternion,
+              quaternion,
               0.35,
             )
         }
 
         state.wallCandidate.distance =
           candidate.distance
-
-        state.wallCandidate
-          .reportedDistance =
-          candidate.reportedDistance
 
         state.wallCandidate.rmsError =
           candidate.rmsError
@@ -1641,7 +1848,8 @@
       )
 
       /*
-       * z-fighting 방지를 위해 카메라 쪽으로 6mm 이동
+       * z-fighting 방지:
+       * 벽 normal 방향으로 6mm 이동
        */
       artwork.position.addScaledVector(
         candidate.normal,
@@ -1656,7 +1864,8 @@
 
       setStatus(
         `이미지를 약 ${
-          candidate.distance.toFixed(2)
+          candidate.distance
+            .toFixed(2)
         }m 거리의 벽에 배치했습니다.`,
       )
     }
@@ -1692,6 +1901,43 @@
         name:
           'wall-art-single-html',
 
+        /*
+         * 카메라 권한 상태 확인
+         */
+        onCameraStatusChange({
+          status,
+        }) {
+          state.cameraStatus =
+            status || 'UNKNOWN'
+
+          enforceLayerOrder()
+
+          if (status === 'requesting') {
+            setStatus(
+              '카메라 권한을 요청하는 중입니다.',
+            )
+          }
+
+          if (status === 'hasStream') {
+            setStatus(
+              '카메라를 시작하는 중입니다.',
+            )
+          }
+
+          if (status === 'hasVideo') {
+            setStatus(
+              '공간 인식을 시작합니다.',
+            )
+          }
+
+          if (status === 'failed') {
+            showError(
+              '카메라를 시작하지 못했습니다.\n' +
+              '브라우저의 카메라 권한을 확인해 주세요.',
+            )
+          }
+        },
+
         onStart() {
           const {
             scene,
@@ -1704,11 +1950,36 @@
           state.camera = camera
           state.renderer = renderer
 
+          enforceLayerOrder()
           updateViewportSize()
+
           enableImageInput(true)
 
           setStatus(
             '주변을 천천히 움직여 공간을 인식하세요.',
+          )
+
+          updateDebug()
+        },
+
+        onAttach() {
+          enforceLayerOrder()
+        },
+
+        onCanvasSizeChange() {
+          updateViewportSize()
+          enforceLayerOrder()
+        },
+
+        onDeviceOrientationChange() {
+          window.setTimeout(
+            updateViewportSize,
+            100,
+          )
+
+          window.setTimeout(
+            enforceLayerOrder,
+            150,
           )
         },
 
@@ -1735,7 +2006,7 @@
             performance.now()
 
           /*
-           * hit-test 약 8Hz
+           * 벽 표면 검사 약 8Hz
            */
           if (
             now -
@@ -1750,7 +2021,7 @@
           }
 
           /*
-           * 디버그 약 4Hz
+           * 디버그 표시 약 4Hz
            */
           if (
             now -
@@ -1811,6 +2082,7 @@
             0
 
           updateViewportSize()
+          enforceLayerOrder()
 
           setStatus(
             '공간 추적을 복구하는 중입니다.',
@@ -1822,6 +2094,8 @@
             'XR pipeline error:',
             error,
           )
+
+          enforceLayerOrder()
 
           showError(
             'AR 실행 중 오류가 발생했습니다.\n' +
@@ -1844,6 +2118,8 @@
 
       state.xrStarted = true
 
+      enforceLayerOrder()
+
       XR8.XrController.configure({
         disableWorldTracking:
           false,
@@ -1858,7 +2134,13 @@
           'absolute',
       })
 
-      const pipelineModules = [
+      /*
+       * XRExtras는 사용하지 않습니다.
+       *
+       * FullWindowCanvas의 DOM 이동과
+       * Loading overlay가 UI를 가리는 가능성을 제거합니다.
+       */
+      XR8.addCameraPipelineModules([
         XR8.GlTextureRenderer
           .pipelineModule(),
 
@@ -1867,75 +2149,24 @@
 
         XR8.XrController
           .pipelineModule(),
-      ]
 
-      /*
-       * XRExtras가 정상 로드됐을 때만 추가합니다.
-       */
-      if (
-        window.XRExtras
-          ?.FullWindowCanvas
-          ?.pipelineModule
-      ) {
-        pipelineModules.push(
-          window.XRExtras
-            .FullWindowCanvas
-            .pipelineModule(),
-        )
-      }
-
-      if (
-        window.XRExtras
-          ?.Loading
-          ?.pipelineModule
-      ) {
-        pipelineModules.push(
-          window.XRExtras
-            .Loading
-            .pipelineModule(),
-        )
-      }
-
-      pipelineModules.push(
         createApplicationPipelineModule(
           XR8,
         ),
-      )
+      ])
 
-      if (
-        window.XRExtras
-          ?.RuntimeError
-          ?.pipelineModule
-      ) {
-        pipelineModules.push(
-          window.XRExtras
-            .RuntimeError
-            .pipelineModule(),
-        )
-      }
-
-      XR8.addCameraPipelineModules(
-        pipelineModules,
-      )
-
-      const runOptions = {
+      XR8.run({
         canvas,
-      }
 
-      if (
-        XR8.XrConfig
-          ?.device
-      ) {
-        runOptions.allowedDevices =
-          XR8.XrConfig.device().ANY
-      }
-
-      XR8.run(runOptions)
+        allowedDevices:
+          XR8.XrConfig.device()
+            .ANY,
+      })
     }
 
     /*
      * -------------------------------------------------------
-     * 이벤트
+     * 사용자 입력
      * -------------------------------------------------------
      */
 
@@ -1967,12 +2198,22 @@
 
     placeButton.addEventListener(
       'click',
-      placeArtwork,
+      event => {
+        event.preventDefault()
+        event.stopPropagation()
+
+        placeArtwork()
+      },
     )
 
     resetButton.addEventListener(
       'click',
-      resetPlacement,
+      event => {
+        event.preventDefault()
+        event.stopPropagation()
+
+        resetPlacement()
+      },
     )
 
     reloadButton.addEventListener(
@@ -1983,8 +2224,21 @@
     )
 
     /*
+     * UI 레이어 터치가 canvas로 전달되지 않도록 합니다.
+     */
+    controls.addEventListener?.(
+      'touchstart',
+      event => {
+        event.stopPropagation()
+      },
+      {
+        passive: true,
+      },
+    )
+
+    /*
      * -------------------------------------------------------
-     * 애플리케이션 초기화
+     * 초기화
      * -------------------------------------------------------
      */
 
@@ -1998,6 +2252,9 @@
       hideError()
       enableImageInput(false)
 
+      enforceLayerOrder()
+      updateDebug()
+
       try {
         if (!window.isSecureContext) {
           throw new Error(
@@ -2007,41 +2264,13 @@
         }
 
         setStatus(
-          '화면 모듈을 불러오는 중입니다.',
-        )
-
-        /*
-         * XRExtras 로딩 실패는 CSS 전체화면 처리로
-         * 일부 대체 가능하므로 경고만 출력하고 계속합니다.
-         */
-        try {
-          await loadExternalScript(
-            XR_EXTRAS_URL,
-            {
-              id:
-                'xrextras-script',
-
-              timeout:
-                20000,
-            },
-          )
-        } catch (error) {
-          console.warn(
-            'XRExtras load warning:',
-            error,
-          )
-        }
-
-        setStatus(
           'AR 추적 엔진을 불러오는 중입니다.',
         )
 
-        /*
-         * 여기에서 script load가 아니라
-         * window.XR8 또는 xrloaded 이벤트를 기다립니다.
-         */
         const XR8 =
           await loadXR8Engine()
+
+        enforceLayerOrder()
 
         setStatus(
           'AR 카메라를 시작하는 중입니다.',
@@ -2054,12 +2283,13 @@
           error,
         )
 
-        const message =
+        enforceLayerOrder()
+
+        showError(
           error instanceof Error
             ? error.message
-            : 'AR 초기화에 실패했습니다.'
-
-        showError(message)
+            : 'AR 초기화에 실패했습니다.',
+        )
       } finally {
         state.xrLoading = false
       }
