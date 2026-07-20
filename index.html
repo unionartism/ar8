@@ -1,1079 +1,578 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
+
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no"
-  />
-  <title>8th Wall Native Wall Placement</title>
+    content="width=device-width, initial-scale=1,
+             maximum-scale=1, user-scalable=no,
+             viewport-fit=cover"
+  >
+
+  <title>Wall Art AR</title>
+
+  <!--
+    This product includes the XR Engine software developed by
+    Niantic Spatial, Inc.
+    Copyright © 2026 Niantic Spatial, Inc.
+    All rights reserved.
+    License: https://github.com/8thwall/engine/blob/main/LICENSE
+  -->
 
   <style>
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    * {
+      box-sizing: border-box;
+    }
 
     html,
     body {
-      margin: 0;
-      padding: 0;
       width: 100%;
       height: 100%;
-      min-height: 100dvh;
+      margin: 0;
       overflow: hidden;
       background: #000;
-      color: #fff;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: system-ui, sans-serif;
       touch-action: none;
-      overscroll-behavior: none;
-      -webkit-text-size-adjust: 100%;
     }
 
-    body { position: relative; }
-
-    #camerafeed,
-    canvas {
-      position: fixed !important;
-      inset: 0 !important;
-      width: 100vw !important;
-      height: 100dvh !important;
-      display: block;
-      z-index: 1;
-      background: #000;
+    #camerafeed {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
     }
 
-    #ui-layer {
+    #ui {
       position: fixed;
       inset: 0;
       z-index: 10;
       pointer-events: none;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
     }
 
-    #top-panel {
-      padding: 20px;
-      padding-top: calc(10px + env(safe-area-inset-top, 0px));
-      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0));
-    }
-
-    #step-title {
-      margin-bottom: 5px;
-      color: #00ff66;
-      font-size: 18px;
-      font-weight: 800;
-    }
-
-    #guide-text {
+    #status {
+      position: absolute;
+      top: max(16px, env(safe-area-inset-top));
+      left: 50%;
+      transform: translateX(-50%);
+      max-width: calc(100% - 32px);
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgb(0 0 0 / 65%);
+      color: white;
       font-size: 14px;
-      line-height: 1.45;
-      opacity: 0.92;
+      text-align: center;
+      white-space: nowrap;
     }
 
-    #bottom-panel {
-      display: none;
-      padding: 15px;
-      padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
-      background: rgba(0, 0, 0, 0.82);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+    #reticle {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 44px;
+      height: 44px;
+      transform: translate(-50%, -50%);
+      border: 2px solid white;
+      border-radius: 50%;
+      transition:
+        border-color 150ms,
+        transform 150ms;
+    }
+
+    #reticle.ready {
+      border-color: #54ff9b;
+      transform: translate(-50%, -50%) scale(1.15);
+    }
+
+    #controls {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: max(20px, env(safe-area-inset-bottom));
+      display: flex;
+      justify-content: center;
+      gap: 10px;
       pointer-events: auto;
     }
 
-    .row {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    button {
-      flex: 1;
-      padding: 14px;
+    button,
+    .file-button {
+      min-height: 48px;
+      padding: 0 18px;
       border: 0;
-      border-radius: 10px;
-      color: #fff;
-      background: #007aff;
-      font-size: 16px;
-      font-weight: 800;
-      cursor: pointer;
-    }
-
-    button.danger { flex: 0.4; background: #991b1b; }
-    button:active { transform: scale(0.98); }
-    button:disabled { opacity: 0.5; }
-
-    #result {
-      padding: 12px;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      background: white;
+      color: black;
       font-size: 15px;
-      line-height: 1.5;
-      text-align: center;
+      font-weight: 700;
     }
 
-    #crosshair {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      z-index: 5;
+    button:disabled {
+      opacity: 0.45;
+    }
+
+    #imageInput {
       display: none;
-      width: 30px;
-      height: 30px;
-      transform: translate(-50%, -50%);
-      border: 2px solid #00ff66;
-      border-radius: 50%;
-      pointer-events: none;
     }
 
-    #crosshair::before,
-    #crosshair::after {
-      content: '';
+    #debug {
       position: absolute;
-      color: inherit;
-      background: currentColor;
-    }
-
-    #crosshair::before {
-      top: 50%;
-      right: -5px;
-      left: -5px;
-      height: 2px;
-      transform: translateY(-50%);
-    }
-
-    #crosshair::after {
-      top: -5px;
-      bottom: -5px;
-      left: 50%;
-      width: 2px;
-      transform: translateX(-50%);
-    }
-
-    #loading-cover {
-      position: fixed;
-      inset: 0;
-      z-index: 50;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      background: #000;
+      right: 10px;
+      bottom: 90px;
+      padding: 8px;
+      border-radius: 8px;
+      background: rgb(0 0 0 / 60%);
       color: #fff;
-      font-size: 16px;
-      line-height: 1.45;
-      text-align: center;
+      font: 11px/1.4 monospace;
+      white-space: pre;
     }
-
-    #loading-cover.hidden { display: none; }
   </style>
 
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-  <script
-    src="https://cdn.jsdelivr.net/npm/@8thwall/engine-binary@1/dist/xr.js"
-    async
-    crossorigin="anonymous"
-    data-preload-chunks="slam">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.172.0/build/three.module.min.js"
+      }
+    }
   </script>
 </head>
 
 <body>
   <canvas id="camerafeed"></canvas>
-  <div id="crosshair"></div>
 
-  <div id="ui-layer">
-    <div id="top-panel">
-      <div id="step-title">AR 준비</div>
-      <div id="guide-text">카메라 권한을 허용하고 주변 공간을 천천히 비춰주세요.</div>
-    </div>
+  <div id="ui">
+    <div id="status">AR 엔진을 불러오는 중입니다.</div>
+    <div id="reticle"></div>
 
-    <div id="bottom-panel">
-      <div id="result">주변 공간을 천천히 비춰주세요.</div>
-      <div class="row">
-        <button id="action-btn">벽면 스캔 중</button>
-        <button id="reset-btn" class="danger">초기화</button>
-      </div>
+    <div id="debug"></div>
+
+    <div id="controls">
+      <label class="file-button">
+        이미지 선택
+        <input
+          id="imageInput"
+          type="file"
+          accept="image/*"
+        >
+      </label>
+
+      <button id="placeButton" disabled>
+        벽에 배치
+      </button>
+
+      <button id="resetButton">
+        초기화
+      </button>
     </div>
   </div>
 
-  <div id="loading-cover">
-    8th Wall 네이티브 파이프라인을 초기화하는 중입니다.<br />카메라 권한을 허용하세요.
-  </div>
+  <script type="module">
+    import * as THREE from 'three'
 
-  <script>
-    'use strict'
+    /*
+     * XR8.Threejs가 동일한 THREE namespace를 사용할 수 있도록
+     * 엔진보다 먼저 전역에 등록합니다.
+     */
+    window.THREE = {...THREE}
 
-    // 완전 재구축 버전: XR8이 canvas, renderer, camera projection을 소유한다.
-    // 앱은 hit test, 벽 평면 추정, 거리 계산, 이미지 배치만 담당한다.
+    const state = {
+      scene: null,
+      camera: null,
+      renderer: null,
 
-    const uiBottom = document.getElementById('bottom-panel')
-    const stepTitle = document.getElementById('step-title')
-    const guideText = document.getElementById('guide-text')
-    const resultEl = document.getElementById('result')
-    const actionBtn = document.getElementById('action-btn')
-    const resetBtn = document.getElementById('reset-btn')
-    const crosshair = document.getElementById('crosshair')
-    const loadingCover = document.getElementById('loading-cover')
-    const canvas = document.getElementById('camerafeed')
+      artwork: null,
+      artworkTexture: null,
 
-    let scene = null
-    let camera = null
-    let renderer = null
-    let arReady = false
-    let xrStarted = false
-    let step = 'ready'
-    let lastUiUpdateAt = 0
-    let operationVersion = 0
+      latestHit: null,
+      trackingStatus: 'INITIALIZING',
 
-    // 벽 스캔 상태
-    let wallSamples = []
-    let wallCandidate = null
-    let wallCandidateStableFrames = 0
-    let wallModel = null
-    let scanCursor = 0
-    let lastWallFitAt = 0
-
-    // 발끝 hit 안정화 상태
-    let rawHit = null
-    let stableHit = null
-    let hitBuffer = []
-
-    // Three.js 객체
-    let wallDebugMesh = null
-    let wallCenterMarker = null
-    let toeMesh = null
-    let toeToWallLine = null
-    let wallProjectionMarker = null
-    let placementMarker = null
-    let imagePlane = null
-    let artworkTexture = null
-
-    let toePoint = null
-    let savedDistanceText = ''
-    let currentPlacementPoint = null
-
-    const TARGET_IMAGE_WIDTH_M = 0.4
-    const TARGET_IMAGE_HEIGHT_M = 0.5
-    const IMAGE_OFFSET_M = 0.008
-    const IMAGE_URL = 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=500'
-
-    const MAX_WALL_SAMPLES = 180
-    const MIN_WALL_SAMPLES = 24
-    const WALL_RANSAC_ITERATIONS = 90
-    const WALL_INLIER_THRESHOLD_M = 0.045
-    const WALL_MAX_NORMAL_Y = 0.32
-    const WALL_MIN_EXTENT_M = 0.35
-    const WALL_MIN_CONFIDENCE = 0.58
-    const WALL_REQUIRED_STABLE_FITS = 6
-    const WALL_FIT_INTERVAL_MS = 180
-
-    const STABLE_SAMPLE_COUNT = 8
-    const STABLE_MAX_SPREAD_M = 0.09
-
-    const WALL_SCAN_SCREEN_POINTS = [
-      [0.50, 0.50],
-      [0.39, 0.50], [0.61, 0.50],
-      [0.50, 0.39], [0.50, 0.61],
-      [0.42, 0.42], [0.58, 0.42],
-      [0.42, 0.58], [0.58, 0.58],
-    ]
-
-    const HIT_SAMPLE_OFFSETS = [
-      [0, 0],
-      [-0.012, 0], [0.012, 0],
-      [0, -0.012], [0, 0.012],
-    ]
-
-    const IMAGE_FRONT = new THREE.Vector3(0, 0, 1)
-    const CENTER_NDC = new THREE.Vector2(0, 0)
-    const centerRaycaster = new THREE.Raycaster()
-    const tempVectorA = new THREE.Vector3()
-    const tempVectorB = new THREE.Vector3()
-    const tempVectorC = new THREE.Vector3()
-
-    function setStep(nextStep) {
-      step = nextStep
-      resetHitStabilizer()
-
-      if (step === 'wallScan') {
-        stepTitle.textContent = '1단계: 벽면 스캔'
-        stepTitle.style.color = '#00d4ff'
-        crosshair.style.borderColor = '#00d4ff'
-        crosshair.style.color = '#00d4ff'
-        guideText.textContent = '벽만 화면에 들어오도록 휴대폰을 천천히 좌우·상하로 움직이세요. 수직 평면이 안정되면 벽면 확정 버튼이 활성화됩니다.'
-        actionBtn.textContent = '벽면 스캔 중'
-        actionBtn.style.background = '#00d4ff'
-        actionBtn.style.color = '#fff'
-        actionBtn.disabled = true
-      } else if (step === 'toe') {
-        stepTitle.textContent = '2단계: 사용자의 발끝'
-        stepTitle.style.color = '#ffe600'
-        crosshair.style.borderColor = '#ffe600'
-        crosshair.style.color = '#ffe600'
-        guideText.textContent = '사용자의 발끝이 닿은 바닥점을 조준점에 맞추고 잠시 고정한 뒤 확정하세요.'
-        actionBtn.textContent = '발끝 확정'
-        actionBtn.style.background = '#ffe600'
-        actionBtn.style.color = '#000'
-        actionBtn.disabled = true
-      } else if (step === 'placeImage') {
-        stepTitle.textContent = '3단계: 벽면 위치 선택'
-        stepTitle.style.color = '#ff00ff'
-        crosshair.style.borderColor = '#ff00ff'
-        crosshair.style.color = '#ff00ff'
-        guideText.textContent = '화면 중앙을 벽의 원하는 위치에 맞추세요. 미리보기가 벽면 위를 따라 움직이면 버튼을 눌러 고정하세요.'
-        actionBtn.textContent = '이 위치에 이미지 고정'
-        actionBtn.style.background = '#ff00ff'
-        actionBtn.style.color = '#fff'
-        actionBtn.disabled = true
-      } else if (step === 'done') {
-        stepTitle.textContent = '배치 완료'
-        stepTitle.style.color = '#00ff66'
-        crosshair.style.borderColor = '#fff'
-        crosshair.style.color = '#fff'
-        guideText.textContent = '거리 표시와 이미지가 벽면 기준으로 고정되었습니다.'
-        actionBtn.textContent = '완료됨'
-        actionBtn.style.background = '#374151'
-        actionBtn.style.color = '#fff'
-        actionBtn.disabled = true
-      }
+      sampleTimer: 0,
     }
 
-    function resetHitStabilizer() {
-      rawHit = null
-      stableHit = null
-      hitBuffer = []
+    const canvas =
+      document.querySelector('#camerafeed')
+
+    const statusElement =
+      document.querySelector('#status')
+
+    const reticleElement =
+      document.querySelector('#reticle')
+
+    const debugElement =
+      document.querySelector('#debug')
+
+    const imageInput =
+      document.querySelector('#imageInput')
+
+    const placeButton =
+      document.querySelector('#placeButton')
+
+    const resetButton =
+      document.querySelector('#resetButton')
+
+    function setStatus(message) {
+      statusElement.textContent = message
     }
 
-    function showRuntimeError(message) {
-      loadingCover.classList.remove('hidden')
-      loadingCover.innerHTML = `<strong>실행 오류</strong><br>${escapeHtml(message)}`
-      stepTitle.textContent = '오류'
-      stepTitle.style.color = '#ff5b5b'
-      guideText.textContent = message
-      actionBtn.disabled = true
+    function setReticleReady(ready) {
+      reticleElement.classList.toggle('ready', ready)
+      placeButton.disabled = !ready || !state.artwork
     }
 
-    function escapeHtml(value) {
-      return String(value)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;')
-    }
-
-    function makeMarker(color, radius = 0.025) {
-      const geometry = new THREE.SphereGeometry(radius, 24, 24)
-      const material = new THREE.MeshStandardMaterial({color})
-      return new THREE.Mesh(geometry, material)
-    }
-
-    function disposeObject(object) {
-      if (!object) return
-      if (object.parent) object.parent.remove(object)
-      if (object.geometry) object.geometry.dispose()
-      if (object.material) {
-        const materials = Array.isArray(object.material) ? object.material : [object.material]
-        for (const material of materials) {
-          if (material.map && material.map !== artworkTexture) material.map.dispose()
-          material.dispose()
-        }
-      }
-    }
-
-    function bestSingleHitAt(x, y) {
-      if (!window.XR8 || !XR8.XrController || !arReady) return null
-
-      try {
-        const results = XR8.XrController.hitTest(x, y, ['FEATURE_POINT']) || []
-        const usable = results
-          .filter(result => result && result.position)
-          .filter(result => !Number.isFinite(result.distance) || (result.distance > 0.08 && result.distance < 7.0))
-
-        if (!usable.length) return null
-
-        usable.sort((a, b) => {
-          const distanceA = Number.isFinite(a.distance) ? a.distance : Infinity
-          const distanceB = Number.isFinite(b.distance) ? b.distance : Infinity
-          return distanceA - distanceB
-        })
-
-        const selected = usable[0]
-        return {
-          position: new THREE.Vector3(
-            selected.position.x,
-            selected.position.y,
-            selected.position.z
-          ),
-          distance: Number.isFinite(selected.distance) ? selected.distance : null,
-          type: selected.type || 'UNKNOWN',
-        }
-      } catch {
-        return null
-      }
-    }
-
-    function getMedian(values) {
-      const sorted = values.slice().sort((a, b) => a - b)
-      return sorted[Math.floor(sorted.length / 2)]
-    }
-
-    function sampleCenterHit() {
-      const candidates = []
-
-      for (const [dx, dy] of HIT_SAMPLE_OFFSETS) {
-        const hit = bestSingleHitAt(0.5 + dx, 0.5 + dy)
-        if (hit) candidates.push(hit)
-      }
-
-      if (!candidates.length) return null
-
-      return {
-        position: new THREE.Vector3(
-          getMedian(candidates.map(hit => hit.position.x)),
-          getMedian(candidates.map(hit => hit.position.y)),
-          getMedian(candidates.map(hit => hit.position.z))
+    function updateDebug(data = {}) {
+      debugElement.textContent = [
+        `tracking: ${state.trackingStatus}`,
+        `hit: ${state.latestHit ? 'YES' : 'NO'}`,
+        `artwork: ${state.artwork ? 'YES' : 'NO'}`,
+        ...Object.entries(data).map(
+          ([key, value]) => `${key}: ${value}`
         ),
-        distance: candidates[0].distance,
-        type: candidates[0].type,
-      }
+      ].join('\n')
     }
 
-    function updateStableCenterHit() {
-      if (step !== 'toe') return
-
-      rawHit = sampleCenterHit()
-      if (!rawHit) {
-        stableHit = null
-        hitBuffer = []
-        actionBtn.disabled = true
-        return
+    function disposeArtwork() {
+      if (state.artwork) {
+        state.artwork.removeFromParent()
+        state.artwork.geometry?.dispose()
+        state.artwork.material?.dispose()
+        state.artwork = null
       }
 
-      hitBuffer.push(rawHit.position.clone())
-      if (hitBuffer.length > STABLE_SAMPLE_COUNT) hitBuffer.shift()
-
-      if (hitBuffer.length < STABLE_SAMPLE_COUNT) {
-        stableHit = null
-        actionBtn.disabled = true
-        return
+      if (state.artworkTexture) {
+        state.artworkTexture.dispose()
+        state.artworkTexture = null
       }
 
-      const mean = new THREE.Vector3()
-      for (const point of hitBuffer) mean.add(point)
-      mean.multiplyScalar(1 / hitBuffer.length)
-
-      let maxSpread = 0
-      for (const point of hitBuffer) {
-        maxSpread = Math.max(maxSpread, point.distanceTo(mean))
-      }
-
-      if (maxSpread <= STABLE_MAX_SPREAD_M) {
-        stableHit = {
-          position: mean.clone(),
-          spread: maxSpread,
-          type: rawHit.type,
-          distance: rawHit.distance,
-        }
-        actionBtn.disabled = false
-      } else {
-        stableHit = null
-        actionBtn.disabled = true
-      }
+      placeButton.disabled = true
     }
 
-    function collectWallSample() {
-      if (step !== 'wallScan') return
-
-      const [x, y] = WALL_SCAN_SCREEN_POINTS[scanCursor % WALL_SCAN_SCREEN_POINTS.length]
-      scanCursor += 1
-
-      const hit = bestSingleHitAt(x, y)
-      if (!hit) return
-
-      // 현재 카메라에서 지나치게 가깝거나 멀리 있는 점은 bestSingleHitAt에서 제거된다.
-      // 직전 점과 거의 같은 좌표는 중복 샘플로 저장하지 않는다.
-      const last = wallSamples[wallSamples.length - 1]
-      if (last && last.distanceToSquared(hit.position) < 0.000025) return
-
-      wallSamples.push(hit.position.clone())
-      if (wallSamples.length > MAX_WALL_SAMPLES) wallSamples.shift()
-    }
-
-    function randomDistinctIndices(length) {
-      const a = Math.floor(Math.random() * length)
-      let b = Math.floor(Math.random() * length)
-      let c = Math.floor(Math.random() * length)
-
-      while (b === a) b = Math.floor(Math.random() * length)
-      while (c === a || c === b) c = Math.floor(Math.random() * length)
-
-      return [a, b, c]
-    }
-
-    function planeFromThreePoints(a, b, c) {
-      const ab = tempVectorA.subVectors(b, a)
-      const ac = tempVectorB.subVectors(c, a)
-      const normal = tempVectorC.crossVectors(ab, ac)
-
-      if (normal.lengthSq() < 0.0001) return null
-      normal.normalize()
-
-      // 벽의 법선은 월드 up(Y)과 거의 수직이어야 한다.
-      if (Math.abs(normal.y) > WALL_MAX_NORMAL_Y) return null
-
-      return {
-        point: a.clone(),
-        normal: normal.clone(),
-        plane: new THREE.Plane().setFromNormalAndCoplanarPoint(normal, a),
-      }
-    }
-
-    function estimateExtent(points, center, normal) {
-      const horizontalAxis = new THREE.Vector3(0, 1, 0).cross(normal).normalize()
-      const verticalAxis = new THREE.Vector3().crossVectors(normal, horizontalAxis).normalize()
-
-      let minH = Infinity
-      let maxH = -Infinity
-      let minV = Infinity
-      let maxV = -Infinity
-
-      for (const point of points) {
-        const relative = new THREE.Vector3().subVectors(point, center)
-        const h = relative.dot(horizontalAxis)
-        const v = relative.dot(verticalAxis)
-        minH = Math.min(minH, h)
-        maxH = Math.max(maxH, h)
-        minV = Math.min(minV, v)
-        maxV = Math.max(maxV, v)
+    async function loadArtwork(file) {
+      if (!state.scene) {
+        throw new Error('Three.js scene is not ready')
       }
 
-      return {
-        width: maxH - minH,
-        height: maxV - minV,
-      }
-    }
+      disposeArtwork()
 
-    function refinePlaneFromInliers(inliers, seedNormal) {
-      const center = new THREE.Vector3()
-      for (const point of inliers) center.add(point)
-      center.multiplyScalar(1 / inliers.length)
+      const bitmap = await createImageBitmap(file)
 
-      // inlier에서 여러 삼각형 법선을 평균해 노이즈를 줄인다.
-      const averagedNormal = new THREE.Vector3()
-      let normalCount = 0
-      const attempts = Math.min(80, inliers.length * 3)
-
-      for (let i = 0; i < attempts; i += 1) {
-        const [ia, ib, ic] = randomDistinctIndices(inliers.length)
-        const candidate = planeFromThreePoints(inliers[ia], inliers[ib], inliers[ic])
-        if (!candidate) continue
-
-        if (candidate.normal.dot(seedNormal) < 0) candidate.normal.negate()
-        averagedNormal.add(candidate.normal)
-        normalCount += 1
-      }
-
-      const normal = normalCount > 0
-        ? averagedNormal.multiplyScalar(1 / normalCount).normalize()
-        : seedNormal.clone().normalize()
-
-      if (Math.abs(normal.y) > WALL_MAX_NORMAL_Y) return null
-
-      // 이미지가 카메라 쪽으로 나오도록 법선 방향을 통일한다.
-      const toCamera = new THREE.Vector3().subVectors(camera.position, center)
-      if (normal.dot(toCamera) < 0) normal.negate()
-
-      const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, center)
-      const extent = estimateExtent(inliers, center, normal)
-
-      return {point: center, normal, plane, extent}
-    }
-
-    function fitWallPlaneRansac(points) {
-      if (points.length < MIN_WALL_SAMPLES) return null
-
-      let best = null
-
-      for (let iteration = 0; iteration < WALL_RANSAC_ITERATIONS; iteration += 1) {
-        const [ia, ib, ic] = randomDistinctIndices(points.length)
-        const candidate = planeFromThreePoints(points[ia], points[ib], points[ic])
-        if (!candidate) continue
-
-        const inliers = []
-        let totalError = 0
-
-        for (const point of points) {
-          const error = Math.abs(candidate.plane.distanceToPoint(point))
-          if (error <= WALL_INLIER_THRESHOLD_M) {
-            inliers.push(point)
-            totalError += error
-          }
-        }
-
-        if (!best || inliers.length > best.inliers.length ||
-          (inliers.length === best.inliers.length && totalError < best.totalError)) {
-          best = {
-            inliers,
-            totalError,
-            normal: candidate.normal.clone(),
-          }
-        }
-      }
-
-      if (!best || best.inliers.length < MIN_WALL_SAMPLES) return null
-
-      const refined = refinePlaneFromInliers(best.inliers, best.normal)
-      if (!refined) return null
-
-      const confidence = best.inliers.length / points.length
-      const meanError = best.totalError / best.inliers.length
-      const hasEnoughExtent =
-        refined.extent.width >= WALL_MIN_EXTENT_M &&
-        refined.extent.height >= WALL_MIN_EXTENT_M
-
-      return {
-        ...refined,
-        confidence,
-        meanError,
-        inlierCount: best.inliers.length,
-        sampleCount: points.length,
-        valid: confidence >= WALL_MIN_CONFIDENCE && hasEnoughExtent,
-      }
-    }
-
-    function updateWallCandidate() {
-      if (step !== 'wallScan') return
-
-      collectWallSample()
-
-      const now = performance.now()
-      if (now - lastWallFitAt < WALL_FIT_INTERVAL_MS) return
-      lastWallFitAt = now
-
-      const candidate = fitWallPlaneRansac(wallSamples)
-      wallCandidate = candidate
-
-      if (candidate && candidate.valid) {
-        wallCandidateStableFrames += 1
-      } else {
-        wallCandidateStableFrames = Math.max(0, wallCandidateStableFrames - 1)
-      }
-
-      actionBtn.disabled = wallCandidateStableFrames < WALL_REQUIRED_STABLE_FITS
-      actionBtn.textContent = actionBtn.disabled ? '벽면 스캔 중' : '벽면 확정'
-    }
-
-    function createWallDebugObjects(model) {
-      disposeObject(wallDebugMesh)
-      disposeObject(wallCenterMarker)
-
-      const width = Math.max(1.2, Math.min(3.0, model.extent.width))
-      const height = Math.max(1.2, Math.min(2.5, model.extent.height))
-
-      wallDebugMesh = new THREE.Mesh(
-        new THREE.PlaneGeometry(width, height),
-        new THREE.MeshBasicMaterial({
-          color: 0x00d4ff,
-          transparent: true,
-          opacity: 0.12,
-          side: THREE.DoubleSide,
-          depthWrite: false,
-        })
+      const maxTextureSize = 2048
+      const ratio = Math.min(
+        1,
+        maxTextureSize / Math.max(bitmap.width, bitmap.height),
       )
 
-      wallDebugMesh.position.copy(model.point)
-      wallDebugMesh.quaternion.setFromUnitVectors(IMAGE_FRONT, model.normal)
-      scene.add(wallDebugMesh)
+      const outputWidth =
+        Math.max(1, Math.round(bitmap.width * ratio))
 
-      wallCenterMarker = makeMarker(0x00d4ff, 0.035)
-      wallCenterMarker.position.copy(model.point)
-      scene.add(wallCenterMarker)
-    }
+      const outputHeight =
+        Math.max(1, Math.round(bitmap.height * ratio))
 
-    function projectPointToWall(point) {
-      if (!wallModel) return null
-      return wallModel.plane.projectPoint(point, new THREE.Vector3())
-    }
+      const imageCanvas =
+        document.createElement('canvas')
 
-    function createToeDistanceObjects() {
-      disposeObject(toeMesh)
-      disposeObject(toeToWallLine)
-      disposeObject(wallProjectionMarker)
+      imageCanvas.width = outputWidth
+      imageCanvas.height = outputHeight
 
-      const projectedPoint = projectPointToWall(toePoint)
-      if (!projectedPoint) return null
+      const context =
+        imageCanvas.getContext('2d')
 
-      toeMesh = makeMarker(0xffe600)
-      toeMesh.position.copy(toePoint)
-      scene.add(toeMesh)
+      if (!context) {
+        bitmap.close()
+        throw new Error('Canvas 2D context is unavailable')
+      }
 
-      wallProjectionMarker = makeMarker(0x00ff66)
-      wallProjectionMarker.position.copy(projectedPoint)
-      scene.add(wallProjectionMarker)
-
-      toeToWallLine = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([toePoint, projectedPoint]),
-        new THREE.LineBasicMaterial({color: 0x00ff66})
+      context.drawImage(
+        bitmap,
+        0,
+        0,
+        outputWidth,
+        outputHeight,
       )
-      scene.add(toeToWallLine)
 
-      return projectedPoint
-    }
+      bitmap.close()
 
-    function getCenterWallIntersection() {
-      if (!wallModel || !camera) return null
+      const texture =
+        new THREE.CanvasTexture(imageCanvas)
 
-      centerRaycaster.setFromCamera(CENTER_NDC, camera)
-      const point = new THREE.Vector3()
-      const intersection = centerRaycaster.ray.intersectPlane(wallModel.plane, point)
-
-      if (!intersection) return null
-
-      // 카메라 뒤쪽의 교차점은 무시한다.
-      const towardPoint = new THREE.Vector3().subVectors(point, centerRaycaster.ray.origin)
-      if (towardPoint.dot(centerRaycaster.ray.direction) <= 0) return null
-
-      return point
-    }
-
-    function makeFallbackTexture() {
-      const width = 800
-      const height = 1000
-      const textureCanvas = document.createElement('canvas')
-      textureCanvas.width = width
-      textureCanvas.height = height
-      const context = textureCanvas.getContext('2d')
-
-      context.fillStyle = '#f4efe6'
-      context.fillRect(0, 0, width, height)
-      context.fillStyle = '#1f1a15'
-      context.fillRect(0, 0, width, 34)
-      context.fillRect(0, height - 34, width, 34)
-      context.fillRect(0, 0, 34, height)
-      context.fillRect(width - 34, 0, 34, height)
-      context.strokeStyle = '#a47a3d'
-      context.lineWidth = 10
-      context.strokeRect(70, 70, width - 140, height - 140)
-      context.fillStyle = '#1f1a15'
-      context.textAlign = 'center'
-      context.textBaseline = 'middle'
-      context.font = 'bold 72px system-ui, sans-serif'
-      context.fillText('WALL ART', width / 2, height / 2 - 35)
-      context.font = '36px system-ui, sans-serif'
-      context.fillText('8th Wall', width / 2, height / 2 + 45)
-
-      const texture = new THREE.CanvasTexture(textureCanvas)
       texture.colorSpace = THREE.SRGBColorSpace
-      return texture
+      texture.needsUpdate = true
+
+      const widthMeters = 0.6
+      const heightMeters =
+        widthMeters * outputHeight / outputWidth
+
+      const geometry =
+        new THREE.PlaneGeometry(
+          widthMeters,
+          heightMeters,
+        )
+
+      const material =
+        new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          side: THREE.DoubleSide,
+          toneMapped: false,
+        })
+
+      const artwork =
+        new THREE.Mesh(geometry, material)
+
+      artwork.visible = false
+      artwork.renderOrder = 10
+
+      state.scene.add(artwork)
+      state.artwork = artwork
+      state.artworkTexture = texture
+
+      setStatus('벽을 향해 천천히 휴대폰을 움직이세요.')
+      setReticleReady(Boolean(state.latestHit))
     }
 
-    function loadArtworkTexture() {
-      return new Promise(resolve => {
-        const loader = new THREE.TextureLoader()
-        loader.setCrossOrigin('anonymous')
-        loader.load(
-          IMAGE_URL,
-          texture => {
-            texture.colorSpace = THREE.SRGBColorSpace
-            resolve(texture)
-          },
-          undefined,
-          () => resolve(makeFallbackTexture())
+    function sampleCenterHit(XR8) {
+      if (state.trackingStatus !== 'NORMAL') {
+        state.latestHit = null
+        setReticleReady(false)
+        return
+      }
+
+      const hits =
+        XR8.XrController.hitTest(0.5, 0.5) || []
+
+      const hit = hits.find((candidate) => {
+        return (
+          candidate.type === 'DETECTED_SURFACE' ||
+          candidate.type === 'ESTIMATED_SURFACE' ||
+          candidate.type === 'FEATURE_POINT'
         )
       })
-    }
 
-    async function ensureImagePreview() {
-      if (imagePlane || !scene || !wallModel) return
+      state.latestHit = hit || null
 
-      const versionAtStart = operationVersion
-      const texture = artworkTexture || await loadArtworkTexture()
-
-      if (versionAtStart !== operationVersion || step !== 'placeImage') {
-        texture.dispose()
+      if (!hit) {
+        setStatus('표면을 찾는 중입니다.')
+        setReticleReady(false)
         return
       }
 
-      artworkTexture = texture
-      imagePlane = new THREE.Mesh(
-        new THREE.PlaneGeometry(TARGET_IMAGE_WIDTH_M, TARGET_IMAGE_HEIGHT_M),
-        new THREE.MeshBasicMaterial({
-          map: artworkTexture,
-          side: THREE.DoubleSide,
-          transparent: true,
-          opacity: 0.82,
-          depthWrite: false,
-        })
+      setStatus('표면 후보입니다. 배치 버튼을 누르세요.')
+      setReticleReady(true)
+    }
+
+    function placeArtwork() {
+      const hit = state.latestHit
+      const artwork = state.artwork
+
+      if (!hit || !artwork) {
+        return
+      }
+
+      artwork.position.set(
+        hit.position.x,
+        hit.position.y,
+        hit.position.z,
       )
-      imagePlane.visible = false
-      imagePlane.quaternion.setFromUnitVectors(IMAGE_FRONT, wallModel.normal)
-      scene.add(imagePlane)
+
+      /*
+       * 초기 MVP에서는 hit rotation을 사용합니다.
+       * 이후 이 부분을 다중 샘플 + RANSAC 벽 추정으로 교체합니다.
+       */
+      artwork.quaternion.set(
+        hit.rotation.x,
+        hit.rotation.y,
+        hit.rotation.z,
+        hit.rotation.w,
+      )
+
+      /*
+       * z-fighting 방지용 아주 작은 오프셋입니다.
+       * 정확한 벽 normal을 계산한 뒤에는 normal 방향으로 적용합니다.
+       */
+      const localNormal =
+        new THREE.Vector3(0, 0, 1)
+          .applyQuaternion(artwork.quaternion)
+
+      artwork.position.addScaledVector(
+        localNormal,
+        0.008,
+      )
+
+      artwork.visible = true
+      setStatus('이미지를 배치했습니다.')
     }
 
-    function updatePlacementPreview() {
-      if (step !== 'placeImage' || !wallModel) return
+    function createPipelineModule(XR8) {
+      return {
+        name: 'wall-art-single-html',
 
-      const point = getCenterWallIntersection()
-      currentPlacementPoint = point ? point.clone() : null
+        onStart() {
+          const {
+            scene,
+            camera,
+            renderer,
+          } = XR8.Threejs.xrScene()
 
-      if (!point) {
-        actionBtn.disabled = true
-        if (imagePlane) imagePlane.visible = false
-        if (placementMarker) placementMarker.visible = false
-        return
-      }
+          state.scene = scene
+          state.camera = camera
+          state.renderer = renderer
 
-      actionBtn.disabled = !imagePlane
-
-      if (!placementMarker) {
-        placementMarker = makeMarker(0xff00ff, 0.018)
-        scene.add(placementMarker)
-      }
-
-      placementMarker.visible = true
-      placementMarker.position.copy(point).addScaledVector(wallModel.normal, IMAGE_OFFSET_M)
-
-      if (!imagePlane) return
-
-      imagePlane.visible = true
-      imagePlane.position.copy(point).addScaledVector(wallModel.normal, IMAGE_OFFSET_M)
-      imagePlane.quaternion.setFromUnitVectors(IMAGE_FRONT, wallModel.normal)
-    }
-
-    function freezeImagePlacement() {
-      if (!imagePlane || !currentPlacementPoint || !wallModel) return
-
-      imagePlane.position
-        .copy(currentPlacementPoint)
-        .addScaledVector(wallModel.normal, IMAGE_OFFSET_M)
-      imagePlane.quaternion.setFromUnitVectors(IMAGE_FRONT, wallModel.normal)
-      imagePlane.material.opacity = 1
-      imagePlane.material.depthWrite = true
-
-      disposeObject(placementMarker)
-      placementMarker = null
-
-      resultEl.innerHTML = savedDistanceText + '<br><span style="color:#00ff66; font-weight:800;">벽면에 이미지 배치 완료!</span>'
-      setStep('done')
-    }
-
-    async function onActionTriggered() {
-      if (step === 'wallScan') {
-        if (!wallCandidate || !wallCandidate.valid ||
-          wallCandidateStableFrames < WALL_REQUIRED_STABLE_FITS) return
-
-        wallModel = {
-          point: wallCandidate.point.clone(),
-          normal: wallCandidate.normal.clone(),
-          plane: wallCandidate.plane.clone(),
-          extent: {...wallCandidate.extent},
-          confidence: wallCandidate.confidence,
-          meanError: wallCandidate.meanError,
-        }
-
-        createWallDebugObjects(wallModel)
-        resultEl.innerHTML = '<span style="color:#00d4ff; font-weight:800;">벽면 확정 완료</span><br>이제 사용자의 발끝 바닥점을 지정하세요.'
-        setStep('toe')
-        return
-      }
-
-      if (step === 'toe') {
-        if (!stableHit || !wallModel) return
-
-        toePoint = stableHit.position.clone()
-        const projectedPoint = createToeDistanceObjects()
-        if (!projectedPoint) return
-
-        const distanceInMeters = Math.abs(wallModel.plane.distanceToPoint(toePoint))
-        const distanceInCm = Math.round(distanceInMeters * 100)
-        savedDistanceText = `<span style="font-size:1.15em; color:#ffe600; font-weight:800;">★ 벽 ↔ 발끝 수직거리: ${distanceInCm}cm</span>`
-
-        resultEl.innerHTML = savedDistanceText + '<br><span style="color:#ff00ff;">벽의 원하는 위치를 화면 중앙으로 조준하세요.</span>'
-        setStep('placeImage')
-        await ensureImagePreview()
-        return
-      }
-
-      if (step === 'placeImage') {
-        freezeImagePlacement()
-      }
-    }
-
-    function resetMeasurement() {
-      operationVersion += 1
-
-      disposeObject(wallDebugMesh)
-      disposeObject(wallCenterMarker)
-      disposeObject(toeMesh)
-      disposeObject(toeToWallLine)
-      disposeObject(wallProjectionMarker)
-      disposeObject(placementMarker)
-      disposeObject(imagePlane)
-
-      wallDebugMesh = null
-      wallCenterMarker = null
-      toeMesh = null
-      toeToWallLine = null
-      wallProjectionMarker = null
-      placementMarker = null
-      imagePlane = null
-
-      if (artworkTexture) artworkTexture.dispose()
-      artworkTexture = null
-
-      wallSamples = []
-      wallCandidate = null
-      wallCandidateStableFrames = 0
-      wallModel = null
-      scanCursor = 0
-      lastWallFitAt = 0
-
-      toePoint = null
-      currentPlacementPoint = null
-      savedDistanceText = ''
-      resetHitStabilizer()
-
-      resultEl.textContent = '벽만 화면에 들어오도록 천천히 비춰주세요.'
-      if (arReady) setStep('wallScan')
-    }
-
-    function initThreeScene() {
-      const xrScene = XR8.Threejs.xrScene()
-      scene = xrScene.scene
-      camera = xrScene.camera
-      renderer = xrScene.renderer
-
-      if (renderer && 'outputColorSpace' in renderer) {
-        renderer.outputColorSpace = THREE.SRGBColorSpace
-      }
-
-      const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 3)
-      light.position.set(0.5, 1, 0.25)
-      scene.add(light)
-
-      arReady = true
-      loadingCover.classList.add('hidden')
-      crosshair.style.display = 'block'
-      uiBottom.style.display = 'block'
-      setStep('wallScan')
-    }
-
-    function updateUi() {
-      const now = performance.now()
-      if (now - lastUiUpdateAt < 120) return
-      lastUiUpdateAt = now
-
-      if (step === 'wallScan') {
-        if (wallCandidate && wallCandidate.valid) {
-          const confidencePercent = Math.round(wallCandidate.confidence * 100)
-          const errorCm = Math.round(wallCandidate.meanError * 100)
-          const stablePercent = Math.min(
-            100,
-            Math.round((wallCandidateStableFrames / WALL_REQUIRED_STABLE_FITS) * 100)
+          renderer.setPixelRatio(
+            Math.min(window.devicePixelRatio, 2),
           )
 
-          resultEl.innerHTML =
-            `수직 벽면 후보 감지: <strong>${confidencePercent}%</strong><br>` +
-            `<span style="font-size:0.9em; opacity:0.85;">` +
-            `${wallCandidate.inlierCount}/${wallCandidate.sampleCount}점 · 평균 오차 ${errorCm}cm · 안정화 ${stablePercent}%` +
-            `</span>`
-        } else if (wallSamples.length < MIN_WALL_SAMPLES) {
-          resultEl.textContent = `벽면 특징점 수집 중... ${wallSamples.length}/${MIN_WALL_SAMPLES}`
-        } else {
-          resultEl.textContent = '수직 벽면을 찾는 중입니다. 벽만 화면에 담고 휴대폰을 천천히 움직이세요.'
-        }
-      } else if (step === 'toe') {
-        if (stableHit) {
-          resultEl.innerHTML =
-            `발끝점 인식 안정됨. 확정 버튼을 누르세요.<br>` +
-            `<span style="font-size:0.9em; opacity:0.8;">안정도 ±${Math.round(stableHit.spread * 100)}cm</span>`
-        } else if (rawHit) {
-          resultEl.textContent = '발끝 바닥점 인식 중... 조준점을 잠시 고정하세요.'
-        } else {
-          resultEl.textContent = '발끝이 닿은 바닥 특징점을 탐색 중입니다.'
-        }
-      } else if (step === 'placeImage') {
-        if (!imagePlane) {
-          resultEl.innerHTML = savedDistanceText + '<br>이미지 텍스처를 준비하는 중입니다.'
-        } else if (currentPlacementPoint) {
-          resultEl.innerHTML = savedDistanceText + '<br><span style="color:#ff00ff;">미리보기 위치를 확인하고 고정하세요.</span>'
-        } else {
-          resultEl.innerHTML = savedDistanceText + '<br>확정한 벽면을 화면 중앙으로 다시 조준하세요.'
-        }
-      }
-    }
-
-    function updateLoop() {
-      if (!arReady) return
-
-      if (step === 'wallScan') updateWallCandidate()
-      if (step === 'toe') updateStableCenterHit()
-      if (step === 'placeImage') updatePlacementPreview()
-
-      updateUi()
-    }
-
-    function wallArtPipelineModule() {
-      return {
-        name: 'native-wall-placement-app',
-        onStart: initThreeScene,
-        onUpdate: updateLoop,
-        onCameraStatusChange: ({status}) => {
-          if (status === 'requesting') {
-            loadingCover.classList.remove('hidden')
-            loadingCover.innerHTML = '카메라 권한을 요청 중입니다.'
-          } else if (status === 'failed') {
-            showRuntimeError('카메라를 열 수 없습니다. HTTPS 환경과 브라우저 카메라 권한을 확인하세요.')
-          }
+          setStatus('주변을 천천히 움직여 공간을 인식하세요.')
         },
-        onException: error => {
-          showRuntimeError(error && error.message ? error.message : String(error))
+
+        onUpdate({
+          processCpuResult,
+          processGpuResult,
+        }) {
+          const reality =
+            processCpuResult?.reality
+
+          if (!reality) {
+            return
+          }
+
+          state.trackingStatus =
+            reality.trackingStatus || 'UNKNOWN'
+
+          const now = performance.now()
+
+          /*
+           * hitTest는 매 프레임 실행하지 않고
+           * 약 8Hz로 제한합니다.
+           */
+          if (now - state.sampleTimer > 125) {
+            state.sampleTimer = now
+            sampleCenterHit(XR8)
+          }
+
+          updateDebug({
+            reason:
+              reality.trackingReason || '-',
+
+            points:
+              reality.worldPoints?.length || 0,
+
+            gpu:
+              processGpuResult ? 'READY' : 'WAIT',
+          })
+        },
+
+        onPaused() {
+          setStatus('카메라가 일시 중지되었습니다.')
+        },
+
+        onResume() {
+          setStatus('추적을 복구하는 중입니다.')
+        },
+
+        onException(error) {
+          console.error(error)
+          setStatus('AR 실행 중 오류가 발생했습니다.')
         },
       }
     }
 
     function startXR() {
-      if (xrStarted) return
+      const XR8 = window.XR8
 
-      if (!window.XR8 || !window.THREE) {
-        showRuntimeError('8th Wall 또는 Three.js가 아직 로드되지 않았습니다. 네트워크 상태를 확인하세요.')
+      if (!XR8) {
+        setStatus('XR8 엔진을 불러오지 못했습니다.')
         return
       }
 
-      xrStarted = true
+      XR8.XrController.configure({
+        disableWorldTracking: false,
+        enableWorldPoints: true,
+        enableLighting: true,
+        scale: 'absolute',
+      })
 
-      try {
-        XR8.XrController.configure({
-          disableWorldTracking: false,
-          scale: 'absolute',
-          enableWorldPoints: true,
-        })
+      XR8.addCameraPipelineModules([
+        XR8.GlTextureRenderer.pipelineModule(),
+        XR8.Threejs.pipelineModule(),
+        XR8.XrController.pipelineModule(),
+        createPipelineModule(XR8),
+      ])
 
-        // 렌더링과 카메라 투영은 XR8 모듈이 전담한다.
-        // canvas.width/height, renderer.setSize, camera projection은 앱에서 수정하지 않는다.
-        XR8.addCameraPipelineModules([
-          XR8.GlTextureRenderer.pipelineModule(),
-          XR8.Threejs.pipelineModule(),
-          XR8.XrController.pipelineModule(),
-          wallArtPipelineModule(),
-        ])
+      XR8.run({
+        canvas,
+        allowedDevices:
+          XR8.XrConfig.device().ANY,
+      })
+    }
 
-        XR8.run({
-          canvas,
-          allowedDevices: XR8.XrConfig.device().ANY,
-        })
-      } catch (error) {
-        xrStarted = false
-        showRuntimeError(error && error.message ? error.message : String(error))
+    function loadXR8Engine() {
+      const script =
+        document.createElement('script')
+
+      script.src =
+        'https://cdn.jsdelivr.net/npm/' +
+        '@8thwall/engine-binary@1/dist/xr.js'
+
+      script.async = true
+      script.crossOrigin = 'anonymous'
+      script.dataset.preloadChunks = 'slam'
+
+      script.addEventListener('error', () => {
+        setStatus('8th Wall 엔진 로딩에 실패했습니다.')
+      })
+
+      document.head.appendChild(script)
+
+      if (window.XR8) {
+        startXR()
+      } else {
+        window.addEventListener(
+          'xrloaded',
+          startXR,
+          {once: true},
+        )
       }
     }
 
-    actionBtn.addEventListener('click', onActionTriggered)
-    resetBtn.addEventListener('click', resetMeasurement)
-    document.addEventListener('touchmove', event => event.preventDefault(), {passive: false})
-    document.addEventListener('gesturestart', event => event.preventDefault())
+    imageInput.addEventListener(
+      'change',
+      async (event) => {
+        const file =
+          event.target.files?.[0]
 
-    window.addEventListener('xrloaded', startXR)
-    if (window.XR8) startXR()
+        if (!file) {
+          return
+        }
+
+        try {
+          await loadArtwork(file)
+        } catch (error) {
+          console.error(error)
+          setStatus('이미지를 불러오지 못했습니다.')
+        } finally {
+          event.target.value = ''
+        }
+      },
+    )
+
+    placeButton.addEventListener(
+      'click',
+      placeArtwork,
+    )
+
+    resetButton.addEventListener(
+      'click',
+      () => {
+        if (state.artwork) {
+          state.artwork.visible = false
+        }
+
+        state.latestHit = null
+        setReticleReady(false)
+        setStatus('주변을 천천히 움직여 다시 인식하세요.')
+      },
+    )
+
+    loadXR8Engine()
   </script>
 </body>
 </html>
