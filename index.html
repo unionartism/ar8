@@ -29,12 +29,11 @@
 
     body { position: fixed; inset: 0; }
 
-    #camerafeed,
-    canvas {
-      position: fixed !important;
-      inset: 0 !important;
-      width: 100vw !important;
-      height: 100dvh !important;
+    #camerafeed {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
       display: block;
       z-index: 1;
       background: #000;
@@ -932,44 +931,17 @@
       if (arReady) setStep('wallScan')
     }
 
-    function applyCanvasSize(width, height) {
-      if (!canvas || !renderer) return
-
-      const safeWidth = Math.max(1, Math.round(width || window.innerWidth))
-      const safeHeight = Math.max(1, Math.round(height || window.innerHeight))
-
-      // XR8이 전달하는 canvasWidth/canvasHeight는 실제 렌더 버퍼 크기다.
-      // renderer의 pixelRatio는 1로 두어 이 값이 다시 배수 적용되지 않게 한다.
-      renderer.setPixelRatio(1)
-      renderer.setSize(safeWidth, safeHeight, false)
-
-      // 표시 크기와 내부 렌더 크기를 분리한다.
-      canvas.style.width = '100vw'
-      canvas.style.height = '100dvh'
-
-      // camera.aspect와 projectionMatrix는 XR8이 카메라 영상에 맞춰 관리하므로 수정하지 않는다.
-    }
-
-    function resizeCanvasToViewport() {
-      if (!renderer) return
-
-      // XR8 크기 콜백 전후의 브라우저 resize 보조 처리.
-      // 과도한 DPR은 저사양 기기에서 프레임 저하를 만들 수 있어 최대 2로 제한한다.
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      const width = Math.round(window.innerWidth * dpr)
-      const height = Math.round(window.innerHeight * dpr)
-      applyCanvasSize(width, height)
-    }
-
-    function initThreeScene({canvasWidth, canvasHeight} = {}) {
+    function initThreeScene() {
       const xrScene = XR8.Threejs.xrScene()
       scene = xrScene.scene
       camera = xrScene.camera
       renderer = xrScene.renderer
 
-      if (renderer) renderer.outputColorSpace = THREE.SRGBColorSpace
-
-      applyCanvasSize(canvasWidth, canvasHeight)
+      // 캔버스 크기, renderer 크기, pixel ratio 및 카메라 projection은
+      // XR8 파이프라인이 카메라 영상과 함께 관리한다. 여기서는 덮어쓰지 않는다.
+      if (renderer && 'outputColorSpace' in renderer) {
+        renderer.outputColorSpace = THREE.SRGBColorSpace
+      }
 
       const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 3)
       light.position.set(0.5, 1, 0.25)
@@ -1041,9 +1013,6 @@
       return {
         name: 'wall-plane-distance-placement',
         onStart: initThreeScene,
-        onCanvasSizeChange: ({canvasWidth, canvasHeight}) => {
-          applyCanvasSize(canvasWidth, canvasHeight)
-        },
         onUpdate: updateLoop,
         onCameraStatusChange: ({status}) => {
           if (status === 'requesting') {
@@ -1090,12 +1059,6 @@
 
     actionBtn.addEventListener('click', onActionTriggered)
     resetBtn.addEventListener('click', resetMeasurement)
-    window.addEventListener('resize', () => {
-      window.requestAnimationFrame(resizeCanvasToViewport)
-    })
-    window.addEventListener('orientationchange', () => {
-      window.setTimeout(resizeCanvasToViewport, 100)
-    })
     document.addEventListener('touchmove', event => event.preventDefault(), {passive: false})
     document.addEventListener('gesturestart', event => event.preventDefault())
 
