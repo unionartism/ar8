@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no"
   />
-  <title>8th Wall 벽면 거리 측정 및 이미지 배치</title>
+  <title>8th Wall Native Wall Placement</title>
 
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -15,8 +15,8 @@
     body {
       margin: 0;
       padding: 0;
-      width: 100vw;
-      height: 100dvh;
+      width: 100%;
+      height: 100%;
       min-height: 100dvh;
       overflow: hidden;
       background: #000;
@@ -27,13 +27,14 @@
       -webkit-text-size-adjust: 100%;
     }
 
-    body { position: fixed; inset: 0; }
+    body { position: relative; }
 
-    #camerafeed {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
+    #camerafeed,
+    canvas {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100dvh !important;
       display: block;
       z-index: 1;
       background: #000;
@@ -194,11 +195,14 @@
   </div>
 
   <div id="loading-cover">
-    8th Wall AR을 초기화하는 중입니다.<br />카메라 권한을 허용하세요.
+    8th Wall 네이티브 파이프라인을 초기화하는 중입니다.<br />카메라 권한을 허용하세요.
   </div>
 
   <script>
     'use strict'
+
+    // 완전 재구축 버전: XR8이 canvas, renderer, camera projection을 소유한다.
+    // 앱은 hit test, 벽 평면 추정, 거리 계산, 이미지 배치만 담당한다.
 
     const uiBottom = document.getElementById('bottom-panel')
     const stepTitle = document.getElementById('step-title')
@@ -214,6 +218,7 @@
     let camera = null
     let renderer = null
     let arReady = false
+    let xrStarted = false
     let step = 'ready'
     let lastUiUpdateAt = 0
     let operationVersion = 0
@@ -937,8 +942,6 @@
       camera = xrScene.camera
       renderer = xrScene.renderer
 
-      // 캔버스 크기, renderer 크기, pixel ratio 및 카메라 projection은
-      // XR8 파이프라인이 카메라 영상과 함께 관리한다. 여기서는 덮어쓰지 않는다.
       if (renderer && 'outputColorSpace' in renderer) {
         renderer.outputColorSpace = THREE.SRGBColorSpace
       }
@@ -1011,7 +1014,7 @@
 
     function wallArtPipelineModule() {
       return {
-        name: 'wall-plane-distance-placement',
+        name: 'native-wall-placement-app',
         onStart: initThreeScene,
         onUpdate: updateLoop,
         onCameraStatusChange: ({status}) => {
@@ -1028,38 +1031,25 @@
       }
     }
 
-
-    function prepareCanvasForXR() {
-      const cssWidth = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1)
-      const cssHeight = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 1)
-      const pixelRatio = Math.min(Math.max(window.devicePixelRatio || 1, 1), 2)
-
-      const bufferWidth = Math.max(1, Math.round(cssWidth * pixelRatio))
-      const bufferHeight = Math.max(1, Math.round(cssHeight * pixelRatio))
-
-      // CSS 표시 크기와 WebGL drawing buffer 크기를 XR8 시작 전에 일치시킨다.
-      // renderer.setSize(), camera.aspect, projectionMatrix는 직접 변경하지 않는다.
-      canvas.style.width = `${cssWidth}px`
-      canvas.style.height = `${cssHeight}px`
-      canvas.width = bufferWidth
-      canvas.height = bufferHeight
-    }
-
     function startXR() {
+      if (xrStarted) return
+
       if (!window.XR8 || !window.THREE) {
         showRuntimeError('8th Wall 또는 Three.js가 아직 로드되지 않았습니다. 네트워크 상태를 확인하세요.')
         return
       }
 
-      try {
-        prepareCanvasForXR()
+      xrStarted = true
 
+      try {
         XR8.XrController.configure({
           disableWorldTracking: false,
           scale: 'absolute',
           enableWorldPoints: true,
         })
 
+        // 렌더링과 카메라 투영은 XR8 모듈이 전담한다.
+        // canvas.width/height, renderer.setSize, camera projection은 앱에서 수정하지 않는다.
         XR8.addCameraPipelineModules([
           XR8.GlTextureRenderer.pipelineModule(),
           XR8.Threejs.pipelineModule(),
@@ -1072,6 +1062,7 @@
           allowedDevices: XR8.XrConfig.device().ANY,
         })
       } catch (error) {
+        xrStarted = false
         showRuntimeError(error && error.message ? error.message : String(error))
       }
     }
@@ -1080,12 +1071,6 @@
     resetBtn.addEventListener('click', resetMeasurement)
     document.addEventListener('touchmove', event => event.preventDefault(), {passive: false})
     document.addEventListener('gesturestart', event => event.preventDefault())
-
-    // 실행 중 drawing buffer를 직접 변경하면 XR8 viewport와 projection이 어긋날 수 있다.
-    // 화면 회전 시에는 XR 세션을 깨끗하게 다시 시작한다.
-    window.addEventListener('orientationchange', () => {
-      window.setTimeout(() => window.location.reload(), 250)
-    })
 
     window.addEventListener('xrloaded', startXR)
     if (window.XR8) startXR()
