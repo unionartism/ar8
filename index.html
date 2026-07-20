@@ -15,8 +15,8 @@
     body {
       margin: 0;
       padding: 0;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100dvh;
       min-height: 100dvh;
       overflow: hidden;
       background: #000;
@@ -1028,6 +1028,23 @@
       }
     }
 
+
+    function prepareCanvasForXR() {
+      const cssWidth = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1)
+      const cssHeight = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 1)
+      const pixelRatio = Math.min(Math.max(window.devicePixelRatio || 1, 1), 2)
+
+      const bufferWidth = Math.max(1, Math.round(cssWidth * pixelRatio))
+      const bufferHeight = Math.max(1, Math.round(cssHeight * pixelRatio))
+
+      // CSS 표시 크기와 WebGL drawing buffer 크기를 XR8 시작 전에 일치시킨다.
+      // renderer.setSize(), camera.aspect, projectionMatrix는 직접 변경하지 않는다.
+      canvas.style.width = `${cssWidth}px`
+      canvas.style.height = `${cssHeight}px`
+      canvas.width = bufferWidth
+      canvas.height = bufferHeight
+    }
+
     function startXR() {
       if (!window.XR8 || !window.THREE) {
         showRuntimeError('8th Wall 또는 Three.js가 아직 로드되지 않았습니다. 네트워크 상태를 확인하세요.')
@@ -1035,6 +1052,8 @@
       }
 
       try {
+        prepareCanvasForXR()
+
         XR8.XrController.configure({
           disableWorldTracking: false,
           scale: 'absolute',
@@ -1061,6 +1080,12 @@
     resetBtn.addEventListener('click', resetMeasurement)
     document.addEventListener('touchmove', event => event.preventDefault(), {passive: false})
     document.addEventListener('gesturestart', event => event.preventDefault())
+
+    // 실행 중 drawing buffer를 직접 변경하면 XR8 viewport와 projection이 어긋날 수 있다.
+    // 화면 회전 시에는 XR 세션을 깨끗하게 다시 시작한다.
+    window.addEventListener('orientationchange', () => {
+      window.setTimeout(() => window.location.reload(), 250)
+    })
 
     window.addEventListener('xrloaded', startXR)
     if (window.XR8) startXR()
